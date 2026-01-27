@@ -1,8 +1,10 @@
 // client/src/App.tsx
-// Navrit Dashboard - High Density Feed
+// NAVRIT - God Mode Dashboard
+// Bloomberg Density + Cosmic Theme
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, TrendingUp, Users, AlertTriangle, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw, TrendingUp, Users, AlertTriangle, Zap, Settings, Activity } from 'lucide-react';
 import { LeadCard } from './components/LeadCard';
 import './index.css';
 
@@ -17,13 +19,23 @@ interface Lead {
   corrections: { field: string; aiValue: string; humanValue: string }[];
 }
 
+interface Stats {
+  totalLeads: number;
+  byGate: { green: number; yellow: number; red: number };
+  calibration?: { greenThreshold: number; yellowThreshold: number };
+}
+
 export default function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<{ totalLeads: number; byGate: { green: number; yellow: number; red: number } } | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [theme, setTheme] = useState<'cosmic' | 'audi'>('cosmic');
 
   useEffect(() => {
     fetchData();
+    // Auto-refresh every 30s
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
@@ -52,75 +64,138 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B35] to-[#E85A24] flex items-center justify-center shadow-lg shadow-[#FF6B35]/30">
-              <span className="text-xl font-bold">N</span>
+    <div className="min-h-screen" data-theme={theme}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          HEADER - Flight Control
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <header className="glass-header sticky top-0 z-50">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-9 h-9 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))] to-orange-700 flex items-center justify-center shadow-lg neon-glow"
+              >
+                <span className="text-lg font-black text-white">N</span>
+              </motion.div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight">
+                  Navrit<span className="text-[rgb(var(--primary))]">.ai</span>
+                </h1>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">God Mode</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                Navrit<span className="text-[#FF6B35]">.ai</span>
-              </h1>
-              <p className="text-xs text-white/40">Lead Intelligence Feed</p>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={fetchData}
+                disabled={loading}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setTheme(theme === 'cosmic' ? 'audi' : 'cosmic')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+              </motion.button>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-4 text-center">
-            <Users className="w-6 h-6 text-[#FF6B35] mx-auto mb-2" />
-            <div className="text-3xl font-bold text-white">{stats?.totalLeads ?? leads.length}</div>
-            <div className="text-xs text-white/50">Total Leads</div>
-          </div>
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-4 text-center">
-            <TrendingUp className="w-6 h-6 text-green-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-green-400">{stats?.byGate.green ?? 0}</div>
-            <div className="text-xs text-white/50">🟢 Auto-Apply</div>
-          </div>
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-4 text-center">
-            <Zap className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-yellow-400">{stats?.byGate.yellow ?? 0}</div>
-            <div className="text-xs text-white/50">🟡 Review</div>
-          </div>
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-4 text-center">
-            <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-red-400">{stats?.byGate.red ?? 0}</div>
-            <div className="text-xs text-white/50">🔴 Escalate</div>
-          </div>
+      <main className="max-w-3xl mx-auto px-4 py-4">
+        {/* ═══════════════════════════════════════════════════════════════════════
+            STATS BAR - Bloomberg Style
+            ═══════════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-panel rounded-xl p-3 text-center"
+          >
+            <Users className="w-5 h-5 text-[rgb(var(--primary))] mx-auto mb-1" />
+            <div className="text-2xl font-mono font-bold">{stats?.totalLeads ?? leads.length}</div>
+            <div className="text-[9px] text-gray-500 uppercase">Total</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-panel rounded-xl p-3 text-center"
+          >
+            <TrendingUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+            <div className="text-2xl font-mono font-bold text-emerald-400">{stats?.byGate.green ?? 0}</div>
+            <div className="text-[9px] text-gray-500 uppercase">Green</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="glass-panel rounded-xl p-3 text-center"
+          >
+            <Activity className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+            <div className="text-2xl font-mono font-bold text-amber-400">{stats?.byGate.yellow ?? 0}</div>
+            <div className="text-[9px] text-gray-500 uppercase">Yellow</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-panel rounded-xl p-3 text-center"
+          >
+            <AlertTriangle className="w-5 h-5 text-red-400 mx-auto mb-1" />
+            <div className="text-2xl font-mono font-bold text-red-400">{stats?.byGate.red ?? 0}</div>
+            <div className="text-[9px] text-gray-500 uppercase">Red</div>
+          </motion.div>
         </div>
 
-        {/* Lead Feed */}
-        <div className="space-y-0">
-          {leads.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
-              <div className="text-5xl mb-4">📭</div>
-              <h3 className="text-xl font-semibold mb-2">No Leads Yet</h3>
-              <p className="text-white/50">Waiting for incoming messages...</p>
+        {/* Calibration Status */}
+        {stats?.calibration && (
+          <div className="glass-panel rounded-lg p-2 mb-4 flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-2">
+              <Zap size={12} className="text-[rgb(var(--primary))]" />
+              <span className="text-gray-400">SELF-HEALING</span>
             </div>
+            <div className="font-mono text-gray-300">
+              GREEN ≥{(stats.calibration.greenThreshold * 100).toFixed(0)}% |
+              YELLOW ≥{(stats.calibration.yellowThreshold * 100).toFixed(0)}%
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            LEAD FEED
+            ═══════════════════════════════════════════════════════════════════════ */}
+        <AnimatePresence mode="popLayout">
+          {leads.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass-panel rounded-xl p-12 text-center"
+            >
+              <div className="text-4xl mb-3">📭</div>
+              <h3 className="font-bold mb-1">No Leads</h3>
+              <p className="text-sm text-gray-500">Waiting for incoming messages...</p>
+            </motion.div>
           ) : (
             leads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
           )}
-        </div>
+        </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 mt-12">
-        <div className="max-w-6xl mx-auto px-6 py-4 text-center text-xs text-white/30">
-          NAVRIT MVP v1.0 • High Density Feed • {new Date().toLocaleDateString()}
+      <footer className="border-t border-white/5 mt-8">
+        <div className="max-w-3xl mx-auto px-4 py-3 text-center text-[10px] text-gray-500 font-mono">
+          NAVRIT v1.0 • GOD MODE • {theme.toUpperCase()} THEME
         </div>
       </footer>
     </div>
