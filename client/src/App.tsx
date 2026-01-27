@@ -1,195 +1,185 @@
 // client/src/App.tsx
-// IRON MAN HUD - Operational Command Center
-// Target tracking, Priority Queue, Deal Focus
+// NAVRIT KILLER OS - The HUD & Stack Controller
+// Gamified commission tracking + Tinder-style focus
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Search, Filter, RefreshCw } from 'lucide-react';
-import { LeadCard } from './components/LeadCard';
+import { Trophy, Flame, Menu, RefreshCw } from 'lucide-react';
+import { KillerCard } from './components/KillerCard';
+import { WarRoom } from './components/WarRoom';
 import './index.css';
 
 interface Lead {
   id: string;
   name: string;
-  status: string;
+  probability: number;
   carModel: string;
-  carColor: string;
-  stockLocation: string;
-  exShowroom: number;
-  discount: number;
-  accessories: number;
-  insurance: number;
-  servicePkg: number;
-  netPrice: number;
+  variant: string;
+  color: string;
+  daysInStock: number;
+  location: string;
+  commission: number;
+  offerPrice: number;
+  financier: string;
+  emi: string;
+  tradeInValue: number | string;
+  tradeInCar: string;
 }
 
-// Bottom Nav Button
-const NavBtn = ({ label, active, onClick }: { label: string; active: boolean; onClick?: () => void }) => (
-  <button
-    onClick={onClick}
-    className={`text-[10px] font-bold tracking-widest transition-colors ${active ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'}`}
-  >
-    {label}
+// Nav Icon
+const NavIcon = ({ icon, active, onClick }: { icon: React.ReactNode; active?: boolean; onClick?: () => void }) => (
+  <button onClick={onClick} className={active ? 'text-[#FF6B35]' : 'text-zinc-500'}>
+    {icon}
   </button>
 );
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('queue');
+  const [warRoomLead, setWarRoomLead] = useState<Lead | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [streak, setStreak] = useState(3);
+  const [earnings, setEarnings] = useState(42500);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchLeads();
+    loadLeads();
   }, []);
 
-  const fetchLeads = async () => {
+  const loadLeads = async () => {
     setLoading(true);
-    try {
-      const res = await fetch('http://localhost:3000/api/leads');
-      const data = await res.json();
-
-      // Enhance with automotive deal data
-      const enhancedLeads = (data.data || []).map((lead: any, i: number) => ({
-        ...lead,
-        carModel: lead.carModel || ['Honda City ZX CVT', 'Elevate Apex', 'WR-V Edge', 'Civic RS Turbo'][i % 4],
-        carColor: lead.carColor || ['#F0F0F0', '#D91C1C', '#1E3A8A', '#000000'][i % 4],
-        stockLocation: ['Yard B (Ready)', 'Transit (2 Days)', 'Yard A (Ready)', 'Transit (5 Days)'][i % 4],
-        exShowroom: [1680000, 1450000, 1120000, 2200000][i % 4],
-        discount: [45000, 0, 25000, 60000][i % 4],
-        accessories: [12000, 0, 8000, 35000][i % 4],
-        insurance: [45000, 38000, 32000, 55000][i % 4],
-        servicePkg: [18000, 0, 15000, 22000][i % 4],
-        get netPrice() {
-          return this.exShowroom - this.discount + this.accessories + this.insurance + this.servicePkg;
-        }
-      }));
-
-      setLeads(enhancedLeads);
-    } catch (err) {
-      // Fallback mock data with full automotive context
+    // In real app, fetch from API
+    setTimeout(() => {
       setLeads([
         {
-          id: '1', name: 'Rahul Sharma', status: 'APPOINTMENT_SET',
-          carModel: 'Honda City ZX CVT', carColor: '#F0F0F0', stockLocation: 'Yard B (Ready)',
-          exShowroom: 1680000, discount: 45000, accessories: 12000, insurance: 45000, servicePkg: 18000,
-          get netPrice() { return this.exShowroom - this.discount + this.accessories + this.insurance + this.servicePkg; }
+          id: '1', name: 'Rahul Sharma', probability: 0.85,
+          carModel: 'City ZX', variant: 'CVT Petrol', color: 'Radiant Red',
+          daysInStock: 62, location: 'Yard B',
+          commission: 8500, offerPrice: 1650000, financier: 'HDFC', emi: '₹22,500',
+          tradeInValue: 450000, tradeInCar: 'Swift 2018'
         },
         {
-          id: '2', name: 'Arjun Singh', status: 'NEW',
-          carModel: 'Elevate Apex', carColor: '#D91C1C', stockLocation: 'Transit (2 Days)',
-          exShowroom: 1450000, discount: 0, accessories: 0, insurance: 38000, servicePkg: 0,
-          get netPrice() { return this.exShowroom - this.discount + this.accessories + this.insurance + this.servicePkg; }
+          id: '2', name: 'Arjun Singh', probability: 0.60,
+          carModel: 'Elevate', variant: 'Apex CVT', color: 'Lunar Silver',
+          daysInStock: 12, location: 'Transit',
+          commission: 4200, offerPrice: 1520000, financier: 'SBI', emi: '₹20,100',
+          tradeInValue: 'No Trade-In', tradeInCar: '-'
         },
         {
-          id: '3', name: 'Priya Patel', status: 'NEGOTIATING',
-          carModel: 'WR-V Edge', carColor: '#1E3A8A', stockLocation: 'Yard A (Ready)',
-          exShowroom: 1120000, discount: 25000, accessories: 8000, insurance: 32000, servicePkg: 15000,
-          get netPrice() { return this.exShowroom - this.discount + this.accessories + this.insurance + this.servicePkg; }
+          id: '3', name: 'Priya Patel', probability: 0.75,
+          carModel: 'WR-V Edge', variant: 'SV Diesel', color: 'Pearl White',
+          daysInStock: 45, location: 'Yard A',
+          commission: 5800, offerPrice: 1280000, financier: 'ICICI', emi: '₹17,200',
+          tradeInValue: 320000, tradeInCar: 'i20 2019'
         }
       ]);
-    }
-    setLoading(false);
+      setLoading(false);
+    }, 500);
   };
 
-  // Filter leads
-  const filteredLeads = leads.filter(l =>
-    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    l.carModel.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSwipe = (dir: 'left' | 'right') => {
+    const currentLead = leads[0];
+    if (!currentLead) return;
 
-  // Stats
-  const actionRequired = leads.filter(l => ['APPOINTMENT_SET', 'ENGAGED', 'NEGOTIATING'].includes(l.status)).length;
-  const totalValue = leads.reduce((sum, l) => sum + (l.netPrice || 0), 0);
+    if (dir === 'right') {
+      // CALL - Count as action
+      setStreak(s => s + 1);
+      setEarnings(e => e + currentLead.commission);
+    }
+
+    // Remove card
+    setTimeout(() => {
+      setLeads(prev => prev.slice(1));
+    }, 200);
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FF6B35]/30 pb-20">
+    <div className="min-h-screen bg-black text-white font-sans overflow-hidden">
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          HUD HEADER
+          1. THE GAMIFIED HUD
           ═══════════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 bg-[#09090B]/95 backdrop-blur-md border-b border-white/10 px-4 py-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-emerald-500 animate-pulse rounded-sm" />
-            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider">SYS: ONLINE</span>
+      <header className="px-5 py-4 flex justify-between items-center bg-gradient-to-b from-black via-black/80 to-transparent relative z-20">
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF6B35] to-red-600 flex items-center justify-center text-black shadow-[0_0_20px_#FF6B35]"
+          >
+            <Flame size={20} fill="currentColor" />
+          </motion.div>
+          <div>
+            <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Streak</div>
+            <div className="text-lg font-black text-white leading-none">{streak} Kills</div>
           </div>
-          <div className="flex gap-4 text-[10px] font-mono">
-            <span className="text-zinc-500">TARGET: <span className="text-white">₹80L</span></span>
-            <span className="text-zinc-500">PIPELINE: <span className="text-[#FF6B35]">₹{(totalValue / 100000).toFixed(1)}L</span></span>
+        </div>
+
+        <div className="text-right">
+          <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Earnings</div>
+          <div className="text-xl font-black text-emerald-400 leading-none font-mono">
+            ₹{earnings.toLocaleString()}
           </div>
         </div>
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          SEARCH/FILTER BAR
+          2. THE STACK (Center Stage)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 flex gap-2">
-        <div className="flex-1 bg-white/5 border border-white/10 rounded-lg flex items-center px-3 h-10">
-          <Search size={14} className="text-zinc-600" />
-          <input
-            type="text"
-            placeholder="VIN / Phone / Model"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none text-xs w-full ml-2 focus:outline-none text-white placeholder:text-zinc-600"
-          />
-        </div>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={fetchLeads}
-          className="w-10 h-10 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-white/10 transition-colors"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </motion.button>
-        <button className="w-10 h-10 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:bg-white/10 transition-colors">
-          <Filter size={14} />
-        </button>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
-          THE FEED
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <main className="px-2">
-        <div className="flex justify-between px-2 mb-2">
-          <span className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest">Priority Queue</span>
-          <span className="text-[10px] text-[#FF6B35] font-mono font-bold">
-            ACTION REQ: {actionRequired}
-          </span>
-        </div>
-
-        <AnimatePresence mode="popLayout">
+      <main className="relative w-full max-w-md mx-auto h-[70vh] px-4 mt-2">
+        <AnimatePresence>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="w-6 h-6 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto" />
-            </div>
-          ) : filteredLeads.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-12"
+              className="flex flex-col items-center justify-center h-full"
             >
-              <p className="text-zinc-500 text-sm">No matches found</p>
+              <RefreshCw size={32} className="text-[#FF6B35] animate-spin" />
             </motion.div>
+          ) : leads.length > 0 ? (
+            leads.map((lead, i) => (
+              <KillerCard
+                key={lead.id}
+                lead={lead}
+                index={i}
+                onSwipe={handleSwipe}
+                onClick={() => setWarRoomLead(lead)}
+              />
+            ))
           ) : (
-            filteredLeads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex flex-col items-center justify-center h-full text-center"
+            >
+              <Trophy size={64} className="mb-4 text-emerald-500" />
+              <h2 className="text-2xl font-black text-white mb-2">All Clear!</h2>
+              <p className="text-zinc-500 mb-6">You crushed it, champion.</p>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={loadLeads}
+                className="bg-[#FF6B35] text-black font-bold py-3 px-8 rounded-full text-sm uppercase"
+              >
+                Load More Deals
+              </motion.button>
+            </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          BOTTOM COMMAND BAR
+          3. WAR ROOM OVERLAY
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-md border-t border-white/10 p-4 flex justify-between items-center z-50">
-        <NavBtn label="QUEUE" active={activeTab === 'queue'} onClick={() => setActiveTab('queue')} />
-        <NavBtn label="STOCK" active={activeTab === 'stock'} onClick={() => setActiveTab('stock')} />
-        <NavBtn label="PERF" active={activeTab === 'perf'} onClick={() => setActiveTab('perf')} />
-        <motion.div
-          whileTap={{ scale: 0.9 }}
-          className="w-12 h-12 bg-[#FF6B35] rounded-full flex items-center justify-center text-black shadow-[0_0_20px_rgba(255,107,53,0.35)] cursor-pointer"
-        >
-          <Zap size={22} fill="currentColor" />
-        </motion.div>
+      <AnimatePresence>
+        {warRoomLead && (
+          <WarRoom lead={warRoomLead} onClose={() => setWarRoomLead(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          4. BOTTOM NAV
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-8 bg-zinc-900/90 backdrop-blur-xl rounded-full px-8 py-4 border border-white/10 z-30">
+        <NavIcon active icon={<Flame size={22} />} />
+        <NavIcon icon={<Trophy size={22} />} />
+        <NavIcon icon={<Menu size={22} />} />
       </div>
     </div>
   );
