@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Lead {
+  id          String   @id @default(uuid())
+  phone       String   @unique
+  name        String?
+  status      String   @default("NEW")
+  market      String   @default("INDIA")
+  budget      Float?
+  confidence  Float    @default(0.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  corrections CorrectionLog[]
+}
+
+model CorrectionLog {
+  id          String   @id @default(uuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  field       String
+  aiValue     String
+  humanValue  String
+  createdAt   DateTime @default(now())
+}
