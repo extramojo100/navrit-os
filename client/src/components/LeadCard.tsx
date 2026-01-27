@@ -1,204 +1,164 @@
 // client/src/components/LeadCard.tsx
-// BLOOMBERG DENSITY - Foldable Ticker Pattern
-// God Mode: Tap to reveal live activity log
+// DESIGN IQ 500 - Car-Centric Super Card
+// Apple/Porsche design language
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MessageSquare, ChevronDown, Clock, MapPin, Zap, CheckCircle, AlertTriangle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Phone, Car, FileText, CheckCircle2, Clock, ChevronRight, Calendar } from 'lucide-react';
 
 interface Lead {
     id: string;
-    name: string | null;
-    phone: string;
-    status: string;
-    market: string;
+    name: string;
     confidence: number;
-    budget: number | null;
-    corrections: { field: string; aiValue: string; humanValue: string }[];
+    status: string;
+    carModel?: string;
+    carColor?: string;
+    budget?: number;
+    market?: string;
 }
 
-interface LogEntry {
-    time: string;
-    action: string;
-    detail: string;
-    type: 'success' | 'warning' | 'info';
-}
+// Activity Icon Mapper
+const ActivityIcon = ({ type, status }: { type: string; status: 'DONE' | 'PENDING' }) => {
+    const color = status === 'DONE' ? 'text-emerald-400' : 'text-gray-500';
+    const bg = status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/10';
+
+    const icons: Record<string, React.ReactNode> = {
+        'CALL': <Phone size={12} />,
+        'TD': <Car size={12} />,
+        'QUOTE': <FileText size={12} />,
+        'BOOK': <span className="text-[8px] font-bold">₹</span>
+    };
+
+    return (
+        <div className={`w-7 h-7 rounded-full ${bg} border flex items-center justify-center ${color}`}>
+            {icons[type] || <CheckCircle2 size={12} />}
+        </div>
+    );
+};
 
 export const LeadCard = ({ lead }: { lead: Lead }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
     const isHot = lead.confidence >= 0.85;
     const isWarm = lead.confidence >= 0.5;
 
-    const signalColor = isHot
-        ? 'text-emerald-400'
+    const borderColor = isHot
+        ? 'border-l-emerald-500'
         : isWarm
-            ? 'text-amber-400'
-            : 'text-red-400';
+            ? 'border-l-amber-500'
+            : 'border-l-red-500';
 
-    const borderClass = isHot
-        ? 'border-emerald-500/40'
-        : isWarm
-            ? 'border-amber-500/30'
-            : 'border-red-500/30';
+    const signalGlow = isHot ? 'shadow-[0_0_20px_rgba(16,185,129,0.12)]' : '';
 
-    // Generate mock activity log
-    const activityLog: LogEntry[] = [
-        { time: '10:42', action: isHot ? 'Auto-Qualified' : 'Needs Review', detail: `Confidence at ${(lead.confidence * 100).toFixed(0)}%`, type: isHot ? 'success' : 'warning' },
-        { time: '10:38', action: 'Message Received', detail: '"Is the test drive available?"', type: 'info' },
-        { time: '10:35', action: 'Lead Created', detail: `Source: ${lead.market}`, type: 'info' }
-    ];
-
-    // Format budget
-    const formatBudget = (budget: number | null) => {
-        if (!budget) return '--';
-        if (budget >= 10000000) return `₹${(budget / 10000000).toFixed(1)}Cr`;
-        if (budget >= 100000) return `₹${(budget / 100000).toFixed(1)}L`;
-        return `₹${budget.toLocaleString()}`;
+    // Determine timeline status
+    const getStepStatus = (step: string): 'DONE' | 'PENDING' => {
+        const statusOrder = ['NEW', 'CONTACTED', 'QUALIFYING', 'APPOINTMENT_SET', 'NEGOTIATING', 'CLOSED_WON'];
+        const currentIndex = statusOrder.indexOf(lead.status);
+        const stepMap: Record<string, number> = { 'CALL': 1, 'TD': 3, 'QUOTE': 4, 'BOOK': 5 };
+        return currentIndex >= stepMap[step] ? 'DONE' : 'PENDING';
     };
 
     return (
         <motion.div
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`ticker-face ${isHot ? 'hot' : ''} mb-3`}
+            whileTap={{ scale: 0.98 }}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className={`relative bg-[#18181B] rounded-xl p-4 mb-3 border-l-[3px] ${borderColor} ${signalGlow} shadow-lg overflow-hidden`}
         >
             {/* ═══════════════════════════════════════════════════════════════════════
-          THE TICKER FACE (Always Visible)
+          1. TOP ROW: NAME + CONFIDENCE + TIME
           ═══════════════════════════════════════════════════════════════════════ */}
-            <div
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-4 cursor-pointer active:bg-white/5 transition-colors"
-            >
-                {/* Header Row */}
-                <div className="flex justify-between items-start mb-3">
+            <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-3">
+                    {/* Avatar with Status Dot */}
+                    <div className="relative">
+                        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-sm font-bold text-white">
+                            {lead.name.charAt(0)}
+                        </div>
+                        {isHot && (
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#18181B] rounded-full animate-pulse" />
+                        )}
+                    </div>
+
                     <div>
-                        <h3 className="text-base font-bold text-white tracking-tight">
-                            {lead.name || 'Unknown Lead'}
-                        </h3>
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium mt-1">
-                            <span className="flex items-center gap-1">
-                                <MapPin size={10} /> {lead.market}
+                        <h3 className="text-base font-bold text-white leading-none">{lead.name}</h3>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isHot ? 'text-emerald-400 bg-emerald-500/10' :
+                                    isWarm ? 'text-amber-400 bg-amber-500/10' :
+                                        'text-red-400 bg-red-500/10'
+                                }`}>
+                                {(lead.confidence * 100).toFixed(0)}% MATCH
                             </span>
-                            <span className="text-gray-600">|</span>
-                            <span className="flex items-center gap-1">
+                            <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
                                 <Clock size={10} /> 2m ago
                             </span>
                         </div>
                     </div>
-
-                    {/* CONFIDENCE SCORE (Financial Style) */}
-                    <div className="text-right">
-                        <div className={`text-xl font-mono font-bold tracking-tighter ${signalColor}`}>
-                            {(lead.confidence * 100).toFixed(0)}<span className="text-xs">%</span>
-                        </div>
-                        <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">
-                            {isHot ? '🟢 GREEN' : isWarm ? '🟡 YELLOW' : '🔴 RED'}
-                        </div>
-                    </div>
                 </div>
-
-                {/* HIGH DENSITY DATA GRID */}
-                <div className="grid grid-cols-4 gap-2 bg-white/5 rounded-lg p-2 border border-white/5">
-                    <div className="text-center border-r border-white/5">
-                        <div className="data-label">Budget</div>
-                        <div className="text-xs font-mono font-semibold text-[rgb(var(--primary))]">
-                            {formatBudget(lead.budget)}
-                        </div>
-                    </div>
-                    <div className="text-center border-r border-white/5">
-                        <div className="data-label">Status</div>
-                        <div className="text-xs font-medium text-white truncate px-1">
-                            {lead.status.replace(/_/g, ' ')}
-                        </div>
-                    </div>
-                    <div className="text-center border-r border-white/5">
-                        <div className="data-label">Phone</div>
-                        <div className="text-[10px] font-mono text-gray-300 truncate">
-                            {lead.phone.slice(-8)}
-                        </div>
-                    </div>
-                    <div className="text-center flex flex-col items-center justify-center">
-                        <div className="data-label">Expand</div>
-                        <motion.div
-                            animate={{ rotate: isExpanded ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <ChevronDown size={14} className="text-gray-400" />
-                        </motion.div>
-                    </div>
-                </div>
-
-                {/* AI Learning Badge */}
-                {lead.corrections.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-[10px]">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                        <span className="text-blue-400 font-medium">AI Learning Active</span>
-                        <span className="text-gray-500">
-                            — Corrected: {lead.corrections[0].aiValue} → {lead.corrections[0].humanValue}
-                        </span>
-                    </div>
-                )}
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
-          THE FOLDABLE LEDGER (God Mode Activity Log)
+          2. MIDDLE ROW: THE PRODUCT (The Car)
           ═══════════════════════════════════════════════════════════════════════ */}
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="border-t border-white/10 bg-black/40 overflow-hidden"
-                    >
-                        {/* Activity Log */}
-                        <div className="p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                    Live Activity Log
-                                </div>
-                                <div className="flex items-center gap-1 text-[10px] text-emerald-400">
-                                    <Zap size={10} />
-                                    <span>Real-time</span>
-                                </div>
+            <div className="flex items-center justify-between bg-black/30 rounded-lg p-3 mb-3 border border-white/5">
+                <div className="flex items-center gap-3">
+                    {/* Car Icon */}
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center border border-white/10">
+                        <Car size={18} className="text-white/80" />
+                    </div>
+                    <div>
+                        <div className="text-sm font-bold text-white">{lead.carModel || 'Model Pending'}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            {/* Color Dot */}
+                            <div className="flex items-center gap-1.5">
+                                <div
+                                    className="w-2.5 h-2.5 rounded-full border border-white/20"
+                                    style={{ backgroundColor: lead.carColor || '#666' }}
+                                />
+                                <span className="text-[10px] text-gray-400 capitalize">{lead.carColor || 'TBD'}</span>
                             </div>
-
-                            {activityLog.map((entry, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ x: -10, opacity: 0 }}
-                                    animate={{ x: 0, opacity: 1 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="log-entry"
-                                >
-                                    <div className="log-time">{entry.time}</div>
-                                    <div className={`log-content ${entry.type}`}>
-                                        <div className={`font-medium ${entry.type === 'success' ? 'text-emerald-400' :
-                                                entry.type === 'warning' ? 'text-amber-400' : 'text-gray-300'
-                                            }`}>
-                                            {entry.action}
-                                        </div>
-                                        <div className="text-gray-500">{entry.detail}</div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                            <span className="text-[10px] text-gray-600">|</span>
+                            {/* Budget */}
+                            <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                                {lead.budget ? `₹${(lead.budget / 100000).toFixed(1)}L` : 'Budget?'}
+                            </span>
                         </div>
+                    </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-600" />
+            </div>
 
-                        {/* ACTION BAR */}
-                        <div className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10">
-                            <button className="py-3 bg-white/5 text-emerald-400 font-bold text-xs uppercase hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                <Phone size={14} /> Call Now
-                            </button>
-                            <button className="py-3 bg-white/5 text-white font-bold text-xs uppercase hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                <MessageSquare size={14} /> WhatsApp
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* ═══════════════════════════════════════════════════════════════════════
+          3. BOTTOM ROW: INTERACTION BUNCHING (Timeline)
+          ═══════════════════════════════════════════════════════════════════════ */}
+            <div className="relative pt-2">
+                {/* Connector Line */}
+                <div className="absolute top-[19px] left-4 right-4 h-[1px] bg-gradient-to-r from-emerald-500/30 via-white/10 to-white/5 z-0" />
+
+                <div className="flex justify-between relative z-10 px-1">
+                    {/* Step 1: Call */}
+                    <div className="flex flex-col items-center gap-1">
+                        <ActivityIcon type="CALL" status={getStepStatus('CALL')} />
+                        <span className="text-[9px] text-gray-500 font-medium">Verified</span>
+                    </div>
+
+                    {/* Step 2: Test Drive */}
+                    <div className="flex flex-col items-center gap-1">
+                        <ActivityIcon type="TD" status={getStepStatus('TD')} />
+                        <span className="text-[9px] text-gray-500 font-medium">Test Drive</span>
+                    </div>
+
+                    {/* Step 3: Quote */}
+                    <div className="flex flex-col items-center gap-1">
+                        <ActivityIcon type="QUOTE" status={getStepStatus('QUOTE')} />
+                        <span className="text-[9px] text-gray-500 font-medium">Quote</span>
+                    </div>
+
+                    {/* Step 4: Book */}
+                    <div className="flex flex-col items-center gap-1">
+                        <ActivityIcon type="BOOK" status={getStepStatus('BOOK')} />
+                        <span className="text-[9px] text-gray-600 font-medium">Book</span>
+                    </div>
+                </div>
+            </div>
         </motion.div>
     );
 };

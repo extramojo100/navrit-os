@@ -1,203 +1,218 @@
 // client/src/App.tsx
-// NAVRIT - God Mode Dashboard
-// Bloomberg Density + Cosmic Theme
+// DESIGN IQ 500 - PWA Layout
+// Empathy Header + Sticky Bottom Nav + Priority Feed
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, TrendingUp, Users, AlertTriangle, Zap, Settings, Activity } from 'lucide-react';
+import { Home, Layers, Trophy, Settings, Bell, Search, Filter, Phone, Zap } from 'lucide-react';
 import { LeadCard } from './components/LeadCard';
 import './index.css';
 
 interface Lead {
   id: string;
-  name: string | null;
-  phone: string;
-  status: string;
-  market: string;
+  name: string;
   confidence: number;
-  budget: number | null;
-  corrections: { field: string; aiValue: string; humanValue: string }[];
+  status: string;
+  carModel?: string;
+  carColor?: string;
+  budget?: number;
+  market?: string;
 }
 
-interface Stats {
-  totalLeads: number;
-  byGate: { green: number; yellow: number; red: number };
-  calibration?: { greenThreshold: number; yellowThreshold: number };
-}
+// Bottom Nav Button Component
+const NavBtn = ({ icon, label, active, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void
+}) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center gap-1 transition-colors ${active ? 'text-white' : 'text-gray-500'}`}
+  >
+    {icon}
+    <span className="text-[9px] font-medium">{label}</span>
+  </button>
+);
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('leads');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [theme, setTheme] = useState<'cosmic' | 'audi'>('cosmic');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchData();
-    // Auto-refresh every 30s
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    fetchLeads();
   }, []);
 
-  const fetchData = async () => {
+  const fetchLeads = async () => {
     setLoading(true);
     try {
-      const [leadsRes, statsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/leads'),
-        fetch('http://localhost:3000/api/leads/stats')
-      ]);
-      const leadsData = await leadsRes.json();
-      const statsData = await statsRes.json();
-      setLeads(leadsData.data || []);
-      setStats(statsData.data || null);
+      const res = await fetch('http://localhost:3000/api/leads');
+      const data = await res.json();
+
+      // Enhance with car data if not present
+      const enhancedLeads = (data.data || []).map((lead: Lead, i: number) => ({
+        ...lead,
+        carModel: lead.carModel || ['Honda City ZX', 'Honda Elevate', 'WR-V', 'Accord'][i % 4],
+        carColor: lead.carColor || ['white', 'red', 'blue', 'black'][i % 4]
+      }));
+
+      setLeads(enhancedLeads);
     } catch (err) {
-      console.error('API Error:', err);
-      // Demo data fallback
+      // Fallback mock data with car details
       setLeads([
-        { id: '1', name: 'Rahul Sharma', phone: '+919876543210', status: 'QUALIFYING', market: 'Honda City', confidence: 0.92, budget: 1500000, corrections: [{ field: 'budget', aiValue: '15000', humanValue: '1500000' }] },
-        { id: '2', name: 'Budi Santoso', phone: '+62812345678', status: 'NEW', market: 'Toyota Fortuner', confidence: 0.72, budget: 450000000, corrections: [] },
-        { id: '3', name: 'Ahmad Al-Rashid', phone: '+971501234567', status: 'CONTACTED', market: 'Innova Zenix', confidence: 0.45, budget: 180000, corrections: [] },
-        { id: '4', name: 'Sarah Chen', phone: '+6591234567', status: 'NEGOTIATING', market: 'Toyota Vios', confidence: 0.88, budget: 85000, corrections: [] }
+        {
+          id: '1', name: 'Rahul Sharma', confidence: 0.92, status: 'APPOINTMENT_SET',
+          carModel: 'Honda City ZX', carColor: 'white', budget: 1500000, market: 'India'
+        },
+        {
+          id: '2', name: 'Siti Nurhaliza', confidence: 0.45, status: 'NEW',
+          carModel: 'Honda WR-V', carColor: 'red', budget: undefined, market: 'Indonesia'
+        },
+        {
+          id: '3', name: 'Arjun Singh', confidence: 0.78, status: 'QUALIFYING',
+          carModel: 'Honda Elevate', carColor: 'blue', budget: 1800000, market: 'India'
+        },
+        {
+          id: '4', name: 'Sarah Chen', confidence: 0.88, status: 'NEGOTIATING',
+          carModel: 'Honda Accord', carColor: 'black', budget: 4500000, market: 'Singapore'
+        }
       ]);
-      setStats({ totalLeads: 4, byGate: { green: 2, yellow: 1, red: 1 } });
     }
     setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen" data-theme={theme}>
-      {/* ═══════════════════════════════════════════════════════════════════════
-          HEADER - Flight Control
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                className="w-9 h-9 rounded-lg bg-gradient-to-br from-[rgb(var(--primary))] to-orange-700 flex items-center justify-center shadow-lg neon-glow"
-              >
-                <span className="text-lg font-black text-white">N</span>
-              </motion.div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight">
-                  Navrit<span className="text-[rgb(var(--primary))]">.ai</span>
-                </h1>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest">God Mode</p>
-              </div>
-            </div>
+  // Filter leads
+  const filteredLeads = leads.filter(l =>
+    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    l.carModel?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-            {/* Controls */}
-            <div className="flex items-center gap-2">
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={fetchData}
-                disabled={loading}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setTheme(theme === 'cosmic' ? 'audi' : 'cosmic')}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-              </motion.button>
-            </div>
+  // Stats
+  const hotCount = leads.filter(l => l.confidence >= 0.85).length;
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white pb-24 font-sans selection:bg-emerald-500/30">
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          1. EMPATHY HEADER (Good Morning + Notification)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <header className="sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-xl border-b border-white/5 px-5 py-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Good Morning, Gaurav</h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {hotCount > 0 ? (
+                <>{hotCount} hot lead{hotCount > 1 ? 's' : ''} need your attention. You're on fire! 🔥</>
+              ) : (
+                <>No hot leads yet. Time to warm them up! ☀️</>
+              )}
+            </p>
           </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center relative border border-white/10"
+          >
+            <Bell size={16} className="text-gray-300" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          </motion.button>
+        </div>
+
+        {/* SEARCH & FILTER */}
+        <div className="mt-4 flex gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+            <input
+              type="text"
+              placeholder="Search by name or car..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#18181B] border border-white/5 rounded-lg py-2.5 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors placeholder:text-gray-600"
+            />
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className="px-4 rounded-lg bg-[#18181B] border border-white/5 flex items-center justify-center text-gray-400 hover:bg-white/5 transition-colors"
+          >
+            <Filter size={16} />
+          </motion.button>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-4">
-        {/* ═══════════════════════════════════════════════════════════════════════
-            STATS BAR - Bloomberg Style
-            ═══════════════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-panel rounded-xl p-3 text-center"
-          >
-            <Users className="w-5 h-5 text-[rgb(var(--primary))] mx-auto mb-1" />
-            <div className="text-2xl font-mono font-bold">{stats?.totalLeads ?? leads.length}</div>
-            <div className="text-[9px] text-gray-500 uppercase">Total</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-panel rounded-xl p-3 text-center"
-          >
-            <TrendingUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-            <div className="text-2xl font-mono font-bold text-emerald-400">{stats?.byGate.green ?? 0}</div>
-            <div className="text-[9px] text-gray-500 uppercase">Green</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass-panel rounded-xl p-3 text-center"
-          >
-            <Activity className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-            <div className="text-2xl font-mono font-bold text-amber-400">{stats?.byGate.yellow ?? 0}</div>
-            <div className="text-[9px] text-gray-500 uppercase">Yellow</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="glass-panel rounded-xl p-3 text-center"
-          >
-            <AlertTriangle className="w-5 h-5 text-red-400 mx-auto mb-1" />
-            <div className="text-2xl font-mono font-bold text-red-400">{stats?.byGate.red ?? 0}</div>
-            <div className="text-[9px] text-gray-500 uppercase">Red</div>
-          </motion.div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          2. THE FEED (Priority Sorted)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <main className="px-5 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Priority Queue</span>
+          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+            <Zap size={10} /> LIVE
+          </span>
         </div>
 
-        {/* Calibration Status */}
-        {stats?.calibration && (
-          <div className="glass-panel rounded-lg p-2 mb-4 flex items-center justify-between text-[10px]">
-            <div className="flex items-center gap-2">
-              <Zap size={12} className="text-[rgb(var(--primary))]" />
-              <span className="text-gray-400">SELF-HEALING</span>
-            </div>
-            <div className="font-mono text-gray-300">
-              GREEN ≥{(stats.calibration.greenThreshold * 100).toFixed(0)}% |
-              YELLOW ≥{(stats.calibration.yellowThreshold * 100).toFixed(0)}%
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════════════
-            LEAD FEED
-            ═══════════════════════════════════════════════════════════════════════ */}
         <AnimatePresence mode="popLayout">
-          {leads.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">Loading leads...</p>
+            </div>
+          ) : filteredLeads.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass-panel rounded-xl p-12 text-center"
+              className="bg-[#18181B] rounded-xl p-12 text-center border border-white/5"
             >
-              <div className="text-4xl mb-3">📭</div>
-              <h3 className="font-bold mb-1">No Leads</h3>
-              <p className="text-sm text-gray-500">Waiting for incoming messages...</p>
+              <div className="text-4xl mb-3">🔍</div>
+              <h3 className="font-bold mb-1">No Results</h3>
+              <p className="text-sm text-gray-500">Try a different search term</p>
             </motion.div>
           ) : (
-            leads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
+            filteredLeads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
           )}
         </AnimatePresence>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 mt-8">
-        <div className="max-w-3xl mx-auto px-4 py-3 text-center text-[10px] text-gray-500 font-mono">
-          NAVRIT v1.0 • GOD MODE • {theme.toUpperCase()} THEME
+      {/* ═══════════════════════════════════════════════════════════════════════
+          3. STICKY BOTTOM NAV (PWA Controller)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#09090B]/95 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-50">
+        <div className="flex justify-between items-center max-w-md mx-auto">
+          <NavBtn
+            icon={<Home size={20} />}
+            label="Home"
+            active={activeTab === 'home'}
+            onClick={() => setActiveTab('home')}
+          />
+          <NavBtn
+            icon={<Layers size={20} />}
+            label="Leads"
+            active={activeTab === 'leads'}
+            onClick={() => setActiveTab('leads')}
+          />
+
+          {/* CENTER ACTION BUTTON (The CTA) */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className="relative -top-5 bg-gradient-to-tr from-emerald-500 to-emerald-400 w-14 h-14 rounded-full shadow-[0_4px_25px_rgba(16,185,129,0.5)] flex items-center justify-center text-black"
+          >
+            <Phone size={24} strokeWidth={2.5} />
+          </motion.button>
+
+          <NavBtn
+            icon={<Trophy size={20} />}
+            label="Wins"
+            active={activeTab === 'wins'}
+            onClick={() => setActiveTab('wins')}
+          />
+          <NavBtn
+            icon={<Settings size={20} />}
+            label="Settings"
+            active={activeTab === 'settings'}
+            onClick={() => setActiveTab('settings')}
+          />
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
