@@ -1,119 +1,130 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ProRow } from './components/ProRow';
-import { Receipt } from './components/Receipt';
+import { VerticalReceipt } from './components/VerticalReceipt';
+import { ActionDock } from './components/ActionDock';
 import { SocialBooster } from './components/SocialBooster';
-import { resolveRules } from './services/RuleEngine';
-import type { Rule } from './services/RuleEngine';
-import { MockEngine } from './services/MockEngine';
-import type { Lead } from './services/MockEngine';
-import { Fingerprint, X, RotateCcw, Loader2 } from 'lucide-react';
+import { Menu, Fingerprint, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-interface EnrichedLead extends Lead {
-  lastLog: string;
-  signal: 'HOT' | 'WARM';
-  activeRules: Rule[];
+// LEAD TYPE
+interface Journey {
+  model: string;
+  stage: string;
+  type: string;
+  price: number;
+  discount: number;
+  insurance: number;
+  accessories: number;
+  netPrice: number;
+  stockStatus: 'YARD' | 'TRANSIT' | 'ORDER';
 }
 
+interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  temperature: 'HOT' | 'COLD' | 'WARM';
+  commissionEst: number;
+  journeys: Journey[];
+}
+
+// DEMO DATA (Includes DELIVERED case for SocialBooster)
+const MOCK_LEADS: Lead[] = [
+  {
+    id: '1', name: 'Rahul Sharma', phone: '+91 98765 00001', temperature: 'HOT', commissionEst: 14500,
+    journeys: [{
+      model: 'Honda City ZX', stage: 'NEGOTIATION', type: 'NEW_SALE',
+      price: 1680000, discount: 45000, insurance: 42000, accessories: 12000, netPrice: 1689000,
+      stockStatus: 'YARD'
+    }]
+  },
+  {
+    id: '2', name: 'Priya Patel', phone: '+91 99012 34567', temperature: 'WARM', commissionEst: 11000,
+    journeys: [{
+      model: 'City VX CVT', stage: 'FINANCE_APPROVED', type: 'NEW_SALE',
+      price: 1520000, discount: 35000, insurance: 38000, accessories: 18000, netPrice: 1541000,
+      stockStatus: 'TRANSIT'
+    }]
+  },
+  {
+    id: '3', name: 'Vikram Malhotra', phone: '+91 88776 65544', temperature: 'WARM', commissionEst: 7500,
+    journeys: [{
+      model: 'Amaze VX MT', stage: 'BOOKING_DONE', type: 'NEW_SALE',
+      price: 980000, discount: 25000, insurance: 28000, accessories: 8000, netPrice: 991000,
+      stockStatus: 'ORDER'
+    }]
+  },
+  {
+    id: '4', name: 'Arjun Singh', phone: '+91 99887 77665', temperature: 'COLD', commissionEst: 4000,
+    journeys: [{
+      model: 'Amaze Elite', stage: 'DELIVERED', type: 'TITLE_TRANSFER',
+      price: 950000, discount: 0, insurance: 0, accessories: 0, netPrice: 960000,
+      stockStatus: 'YARD'
+    }]
+  }
+];
+
 export default function App() {
-  const [leads, setLeads] = useState<EnrichedLead[]>([]);
-  const [selected, setSelected] = useState<EnrichedLead | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Lead | null>(null);
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
+  const totalSales = MOCK_LEADS.reduce((acc, l) => acc + l.journeys[0].netPrice, 0);
+  const activeCount = MOCK_LEADS.filter(l => l.journeys[0].stage !== 'DELIVERED').length;
 
-  const loadLeads = async () => {
-    setLoading(true);
-    const data = await MockEngine.getLeads();
-
-    // Enrich with UI-specific fields
-    const enriched: EnrichedLead[] = data.map((lead) => ({
-      ...lead,
-      lastLog: lead.journeys[0].logs[0]?.msg || 'New Lead',
-      signal: lead.probability > 0.8 ? 'HOT' as const : 'WARM' as const,
-      activeRules: resolveRules({ model: lead.journeys[0].model })
-    }));
-
-    // Sort by commission (highest first)
-    const sorted = enriched.sort((a, b) => b.commission.amount - a.commission.amount);
-    setLeads(sorted);
-    setLoading(false);
+  const handleCall = () => {
+    if (selected) {
+      console.log(`📞 Calling: ${selected.name} at ${selected.phone}`);
+    }
   };
 
-  const handleReset = async () => {
-    await MockEngine.resetData();
-    await loadLeads();
+  const handleWhatsApp = () => {
+    if (selected) {
+      console.log(`💬 WhatsApp: ${selected.name}`);
+    }
   };
 
-  const totalCommission = leads.reduce((acc, l) => acc + l.commission.amount, 0);
+  const handleQuote = () => {
+    if (selected) {
+      console.log(`📄 Generating Quote for: ${selected.name}`);
+    }
+  };
+
+  const handleCloseDeal = () => {
+    if (selected) {
+      console.log(`⚡ Close Deal: ${selected.name}`);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-bg text-text font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FF6B35]/30">
 
       {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-bg/95 backdrop-blur border-b border-border px-4 h-12 flex justify-between items-center">
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur border-b border-white/5 px-4 h-14 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center border border-border">
-            <Fingerprint size={14} className="text-muted" />
+          <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+            <Fingerprint size={16} className="text-zinc-400" />
           </div>
           <div>
-            <span className="text-xs font-bold text-text tracking-wide">NAVRIT</span>
-            <span className="text-xxs text-muted ml-1">OS</span>
+            <div className="text-[10px] text-zinc-500 font-bold uppercase">Total Sales</div>
+            <div className="text-sm font-bold text-white">₹ {(totalSales / 10000000).toFixed(2)} Cr</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleReset}
-            className="p-1.5 hover:bg-surface rounded text-muted transition-colors"
-            title="Reset Demo"
-          >
-            <RotateCcw size={12} />
-          </button>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-surface rounded border border-border">
-            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <span className="text-xxs font-mono text-muted">LIVE</span>
-          </div>
-        </div>
+        <button className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+          <Menu size={16} className="text-zinc-400" />
+        </button>
       </header>
-
-      {/* COMMISSION BAR */}
-      <div className="px-4 py-2 bg-surface border-b border-border flex justify-between items-center">
-        <span className="text-xxs text-muted uppercase tracking-widest font-bold">Today's Queue</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xxs text-muted">Commission:</span>
-          <span className="text-xs font-mono font-bold text-success">₹{totalCommission.toLocaleString()}</span>
-        </div>
-      </div>
 
       {/* FEED */}
       <main>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted">
-            <Loader2 className="animate-spin mb-2" size={20} />
-            <span className="text-xxs uppercase tracking-widest">Loading...</span>
-          </div>
-        ) : (
-          leads.map(lead => (
-            <ProRow key={lead.id} lead={lead} onOpen={() => setSelected(lead)} />
-          ))
-        )}
-
-        {!loading && leads.length === 0 && (
-          <div className="p-8 text-center">
-            <div className="text-muted text-sm">All leads processed.</div>
-            <button
-              onClick={handleReset}
-              className="mt-4 px-4 py-2 bg-surface border border-border rounded text-xxs text-muted hover:text-text transition-colors"
-            >
-              Reset Demo Data
-            </button>
-          </div>
-        )}
+        <div className="px-4 py-2 bg-[#09090B] border-b border-white/5 flex justify-between items-center">
+          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Priority Queue</span>
+          <span className="text-[10px] text-[#FF6B35] font-bold">{activeCount} Active</span>
+        </div>
+        {MOCK_LEADS.map(lead => (
+          <ProRow key={lead.id} lead={lead} onClick={() => setSelected(lead)} />
+        ))}
       </main>
 
-      {/* DETAIL SHEET */}
+      {/* DETAIL OVERLAY */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -121,113 +132,63 @@ export default function App() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-50 bg-bg flex flex-col"
+            className="fixed inset-0 z-50 bg-black flex flex-col"
           >
-            {/* SHEET HEADER */}
-            <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-bg">
+            {/* HEADER */}
+            <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-[#09090B]">
               <div>
-                <h2 className="text-sm font-bold text-text">{selected.name}</h2>
-                <p className="text-xxs text-muted font-mono">ID: {selected.id} • {selected.phone}</p>
+                <h2 className="text-sm font-bold text-white">{selected.name}</h2>
+                <p className="text-[10px] text-zinc-500">{selected.phone} • {selected.journeys[0].stage.replace('_', ' ')}</p>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                className="p-2 hover:bg-surface rounded text-muted transition-colors"
+                className="p-2 bg-white/5 rounded-full text-zinc-400 hover:bg-white/10 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* SHEET BODY */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* BODY */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-8">
 
-              {/* 1. DEAL STRUCTURE */}
+              {/* 1. FINANCIALS (Vertical Receipt) */}
               <section>
-                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Deal Structure</div>
-                <Receipt
-                  data={selected.journeys[0].financials}
-                  appliedRule={selected.activeRules.find(r => r.level === 'MANAGER')}
+                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Deal Structure</div>
+                <VerticalReceipt
+                  data={selected.journeys[0]}
+                  commission={selected.commissionEst}
                 />
               </section>
 
-              {/* 2. COMMISSION BREAKDOWN */}
-              <section>
-                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Commission Breakdown</div>
-                <div className="bg-surface border border-border rounded-lg p-4 grid grid-cols-3 gap-4">
-                  <div>
-                    <div className="text-xxs text-muted uppercase">Base</div>
-                    <div className="text-sm font-mono font-bold text-text">₹{selected.commission.breakdown.base.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-xxs text-muted uppercase">Spiff</div>
-                    <div className="text-sm font-mono font-bold text-warning">₹{selected.commission.breakdown.spiff.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-xxs text-muted uppercase">Finance</div>
-                    <div className="text-sm font-mono font-bold text-primary">₹{selected.commission.breakdown.finance.toLocaleString()}</div>
-                  </div>
-                </div>
-                <div className="mt-2 flex justify-between items-center px-1">
-                  <span className="text-xxs text-muted">Multiplier: {selected.commission.multiplier}x</span>
-                  <span className="text-sm font-mono font-bold text-success">Total: ₹{selected.commission.amount.toLocaleString()}</span>
-                </div>
-              </section>
-
-              {/* 3. ACTIVE RULES */}
-              <section>
-                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Active Logic Constraints</div>
-                <div className="space-y-1">
-                  {selected.activeRules.slice(0, 4).map((rule, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xxs font-mono text-muted bg-surface p-2 rounded border border-border">
-                      <span className={`w-1.5 h-1.5 rounded-full ${rule.level === 'BRAND' ? 'bg-primary' :
-                        rule.level === 'GROUP' ? 'bg-success' :
-                          rule.level === 'DEALER' ? 'bg-warning' :
-                            'bg-danger'
-                        }`} />
-                      <span className="font-bold text-text">{rule.level}:</span>
-                      <span className="flex-1">{rule.action}</span>
-                      <span className="text-muted">{rule.type}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* 4. SOCIAL BOOSTER */}
-              {selected.journeys[0].status.includes('DELIVER') && (
+              {/* 2. VICTORY LAP (Only if DELIVERED) */}
+              {selected.journeys[0].stage === 'DELIVERED' && (
                 <SocialBooster
                   model={selected.journeys[0].model}
                   customerName={selected.name.split(' ')[0]}
                 />
               )}
-
-              {/* Always show for demo */}
-              <SocialBooster
-                model={selected.journeys[0].model}
-                customerName={selected.name.split(' ')[0]}
-              />
             </div>
 
-            {/* SHEET FOOTER */}
-            <div className="p-4 border-t border-border bg-bg grid grid-cols-2 gap-3">
-              <button className="py-3 bg-primary text-white font-bold rounded-lg text-xs uppercase tracking-wide hover:bg-primary/90 transition-colors">
-                Call Now
-              </button>
-              <button className="py-3 bg-surface text-text font-bold rounded-lg text-xs uppercase tracking-wide border border-border hover:bg-bg transition-colors">
-                WhatsApp
-              </button>
-            </div>
+            {/* 3. ACTION DOCK (Persistent) */}
+            <ActionDock
+              onCall={handleCall}
+              onWhatsApp={handleWhatsApp}
+              onQuote={handleQuote}
+              onClose={handleCloseDeal}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* NAV BAR */}
-      <nav className="fixed bottom-0 left-0 right-0 h-14 bg-bg border-t border-border flex justify-around items-center text-xxs font-medium">
-        <button className="text-text flex flex-col items-center gap-1">
-          <div className="w-1 h-1 rounded-full bg-primary" />
-          Feed
+      {/* BOTTOM NAV */}
+      <nav className="fixed bottom-0 left-0 right-0 h-14 bg-[#09090B] border-t border-white/10 flex justify-around items-center text-[10px] font-bold">
+        <button className="text-white flex flex-col items-center gap-1">
+          <div className="w-1 h-1 rounded-full bg-[#FF6B35]" />
+          QUEUE
         </button>
-        <button className="text-muted hover:text-text transition-colors">Tasks</button>
-        <button className="text-muted hover:text-text transition-colors">Perf</button>
-        <button className="text-muted hover:text-text transition-colors">Settings</button>
+        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">TASKS</button>
+        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">PERF</button>
+        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">SETTINGS</button>
       </nav>
     </div>
   );
