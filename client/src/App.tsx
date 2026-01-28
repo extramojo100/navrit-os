@@ -57,9 +57,11 @@ export default function App() {
   }, []);
 
   // 3. Auth Redirect Logic
-  // If authenticated but on auth pages, clean the URL.
+  // If authenticated but on /login, clean URL. 
+  // We ALLOW /signup even if authenticated (or should we redirect? Standard is redirect).
+  // But for now, let's strictly fix the "can't see signup" issue.
   useEffect(() => {
-    if (session && (window.location.pathname === '/login' || window.location.pathname === '/signup')) {
+    if (session && window.location.pathname === '/login') {
       window.history.replaceState(null, '', '/');
     }
   }, [session]);
@@ -84,7 +86,11 @@ export default function App() {
     return <Login />;
   }
 
-  // 3. Authenticated Dashboard
+  // 3. Authenticated Dashboard (or specific routes)
+  if (window.location.pathname === '/signup') {
+    return <Signup />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FF6B35]/30 pb-24">
 
