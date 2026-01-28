@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useDrag } from '@use-gesture/react';
-import { useMotionValue, useTransform, motion, AnimatePresence } from 'framer-motion';
-import { ProCard } from './components/ProCard';
-import { DetailSheet } from './components/DetailSheet';
+import { ProRow } from './components/ProRow';
+import { Receipt } from './components/Receipt';
+import { SocialBooster } from './components/SocialBooster';
+import { resolveRules } from './services/RuleEngine';
+import type { Rule } from './services/RuleEngine';
 import { MockEngine } from './services/MockEngine';
 import type { Lead } from './services/MockEngine';
-import { Zap, Loader2, Phone, Ghost, RotateCcw } from 'lucide-react';
+import { Fingerprint, X, RotateCcw, Loader2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+interface EnrichedLead extends Lead {
+  lastLog: string;
+  signal: 'HOT' | 'WARM';
+  activeRules: Rule[];
+}
 
 export default function App() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [leads, setLeads] = useState<EnrichedLead[]>([]);
+  const [selected, setSelected] = useState<EnrichedLead | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // INITIALIZE (The "Boot" Sequence)
   useEffect(() => {
     loadLeads();
   }, []);
@@ -20,8 +27,17 @@ export default function App() {
   const loadLeads = async () => {
     setLoading(true);
     const data = await MockEngine.getLeads();
-    // Sort by Commission (The "Elon" Logic)
-    const sorted = [...data].sort((a, b) => b.commission.amount - a.commission.amount);
+
+    // Enrich with UI-specific fields
+    const enriched: EnrichedLead[] = data.map((lead) => ({
+      ...lead,
+      lastLog: lead.journeys[0].logs[0]?.msg || 'New Lead',
+      signal: lead.probability > 0.8 ? 'HOT' as const : 'WARM' as const,
+      activeRules: resolveRules({ model: lead.journeys[0].model })
+    }));
+
+    // Sort by commission (highest first)
+    const sorted = enriched.sort((a, b) => b.commission.amount - a.commission.amount);
     setLeads(sorted);
     setLoading(false);
   };
@@ -31,175 +47,188 @@ export default function App() {
     await loadLeads();
   };
 
-  // ACTIONS
-  const handleGhost = async (id: string) => {
-    // Optimistic UI Update
-    setLeads(prev => prev.filter(l => l.id !== id));
-    await MockEngine.nukeLead(id);
-  };
-
-  const handleCall = (id: string) => {
-    const lead = leads.find(l => l.id === id);
-    if (lead) {
-      console.log(`📞 Calling: ${lead.name} at ${lead.phone}`);
-      // In production: window.location.href = `tel:${lead.phone}`;
-    }
-  };
-
-  // Calculate totals
-  const totalCommission = leads.reduce((acc, lead) => acc + lead.commission.amount, 0);
+  const totalCommission = leads.reduce((acc, l) => acc + l.commission.amount, 0);
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 pb-20">
+    <div className="min-h-screen bg-bg text-text font-sans selection:bg-primary/30">
 
       {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-black/90 backdrop-blur border-b border-white/5 px-4 py-3 flex justify-between items-center">
+      <header className="sticky top-0 z-40 bg-bg/95 backdrop-blur border-b border-border px-4 h-12 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#FF6B35] to-red-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,107,53,0.3)]">
-            <Zap size={18} className="text-black fill-current" />
+          <div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center border border-border">
+            <Fingerprint size={14} className="text-muted" />
           </div>
           <div>
-            <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">My Commission</div>
-            <div className="text-base font-black text-white leading-none">₹ {totalCommission.toLocaleString()}</div>
+            <span className="text-xs font-bold text-text tracking-wide">NAVRIT</span>
+            <span className="text-xxs text-muted ml-1">OS</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleReset}
-            className="p-2 bg-zinc-900 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors"
-            title="Reset Demo Data"
+            className="p-1.5 hover:bg-surface rounded text-muted transition-colors"
+            title="Reset Demo"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={12} />
           </button>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-mono text-zinc-400">LIVE</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-surface rounded border border-border">
+            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            <span className="text-xxs font-mono text-muted">LIVE</span>
           </div>
         </div>
       </header>
 
+      {/* COMMISSION BAR */}
+      <div className="px-4 py-2 bg-surface border-b border-border flex justify-between items-center">
+        <span className="text-xxs text-muted uppercase tracking-widest font-bold">Today's Queue</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xxs text-muted">Commission:</span>
+          <span className="text-xs font-mono font-bold text-success">₹{totalCommission.toLocaleString()}</span>
+        </div>
+      </div>
+
       {/* FEED */}
-      <main className="pt-2">
-        {/* LOADING STATE */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-            <Loader2 className="animate-spin mb-2" size={24} />
-            <span className="text-xs uppercase tracking-widest">Syncing Digital Twin...</span>
+      <main>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-muted">
+            <Loader2 className="animate-spin mb-2" size={20} />
+            <span className="text-xxs uppercase tracking-widest">Loading...</span>
           </div>
+        ) : (
+          leads.map(lead => (
+            <ProRow key={lead.id} lead={lead} onOpen={() => setSelected(lead)} />
+          ))
         )}
 
-        {/* DATA STATE */}
-        {!loading && (
-          <>
-            <div className="px-4 py-2 flex justify-between items-center bg-[#09090B] border-b border-white/5">
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                Action Queue
-              </span>
-              <span className="text-[10px] text-emerald-400 font-bold font-mono">
-                {leads.length} LIVE
-              </span>
-            </div>
-
-            {leads.map(lead => (
-              <ProCardWithSwipe
-                key={lead.id}
-                lead={lead}
-                onOpen={setSelectedLead}
-                onGhost={handleGhost}
-                onCall={handleCall}
-              />
-            ))}
-
-            {leads.length === 0 && (
-              <div className="p-8 text-center">
-                <div className="text-zinc-600 text-sm">All leads processed.</div>
-                <button
-                  onClick={handleReset}
-                  className="mt-4 px-4 py-2 bg-zinc-900 rounded-lg text-xs text-zinc-400 hover:text-white transition-colors"
-                >
-                  Reset Demo Data
-                </button>
-              </div>
-            )}
-          </>
+        {!loading && leads.length === 0 && (
+          <div className="p-8 text-center">
+            <div className="text-muted text-sm">All leads processed.</div>
+            <button
+              onClick={handleReset}
+              className="mt-4 px-4 py-2 bg-surface border border-border rounded text-xxs text-muted hover:text-text transition-colors"
+            >
+              Reset Demo Data
+            </button>
+          </div>
         )}
       </main>
 
-      {/* BOTTOM DOCK */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#09090B] border-t border-white/10 p-4 flex justify-around items-center z-40 text-[10px] font-bold tracking-widest">
-        <button className="text-white flex flex-col items-center gap-1">
-          <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-          QUEUE
-        </button>
-        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">WORKFLOWS</button>
-        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">REPORTS</button>
-        <button className="text-zinc-600 hover:text-zinc-400 transition-colors">SETTINGS</button>
-      </nav>
-
-      {/* DETAIL OVERLAY */}
+      {/* DETAIL SHEET */}
       <AnimatePresence>
-        {selectedLead && (
-          <DetailSheet lead={selectedLead} onClose={() => setSelectedLead(null)} />
+        {selected && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-50 bg-bg flex flex-col"
+          >
+            {/* SHEET HEADER */}
+            <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-bg">
+              <div>
+                <h2 className="text-sm font-bold text-text">{selected.name}</h2>
+                <p className="text-xxs text-muted font-mono">ID: {selected.id} • {selected.phone}</p>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="p-2 hover:bg-surface rounded text-muted transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* SHEET BODY */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+              {/* 1. DEAL STRUCTURE */}
+              <section>
+                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Deal Structure</div>
+                <Receipt
+                  data={selected.journeys[0].financials}
+                  appliedRule={selected.activeRules.find(r => r.level === 'MANAGER')}
+                />
+              </section>
+
+              {/* 2. COMMISSION BREAKDOWN */}
+              <section>
+                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Commission Breakdown</div>
+                <div className="bg-surface border border-border rounded-lg p-4 grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-xxs text-muted uppercase">Base</div>
+                    <div className="text-sm font-mono font-bold text-text">₹{selected.commission.breakdown.base.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xxs text-muted uppercase">Spiff</div>
+                    <div className="text-sm font-mono font-bold text-warning">₹{selected.commission.breakdown.spiff.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xxs text-muted uppercase">Finance</div>
+                    <div className="text-sm font-mono font-bold text-primary">₹{selected.commission.breakdown.finance.toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-between items-center px-1">
+                  <span className="text-xxs text-muted">Multiplier: {selected.commission.multiplier}x</span>
+                  <span className="text-sm font-mono font-bold text-success">Total: ₹{selected.commission.amount.toLocaleString()}</span>
+                </div>
+              </section>
+
+              {/* 3. ACTIVE RULES */}
+              <section>
+                <div className="text-xxs font-bold text-muted uppercase tracking-widest mb-2">Active Logic Constraints</div>
+                <div className="space-y-1">
+                  {selected.activeRules.slice(0, 4).map((rule, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xxs font-mono text-muted bg-surface p-2 rounded border border-border">
+                      <span className={`w-1.5 h-1.5 rounded-full ${rule.level === 'BRAND' ? 'bg-primary' :
+                        rule.level === 'GROUP' ? 'bg-success' :
+                          rule.level === 'DEALER' ? 'bg-warning' :
+                            'bg-danger'
+                        }`} />
+                      <span className="font-bold text-text">{rule.level}:</span>
+                      <span className="flex-1">{rule.action}</span>
+                      <span className="text-muted">{rule.type}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* 4. SOCIAL BOOSTER */}
+              {selected.journeys[0].status.includes('DELIVER') && (
+                <SocialBooster
+                  model={selected.journeys[0].model}
+                  customerName={selected.name.split(' ')[0]}
+                />
+              )}
+
+              {/* Always show for demo */}
+              <SocialBooster
+                model={selected.journeys[0].model}
+                customerName={selected.name.split(' ')[0]}
+              />
+            </div>
+
+            {/* SHEET FOOTER */}
+            <div className="p-4 border-t border-border bg-bg grid grid-cols-2 gap-3">
+              <button className="py-3 bg-primary text-white font-bold rounded-lg text-xs uppercase tracking-wide hover:bg-primary/90 transition-colors">
+                Call Now
+              </button>
+              <button className="py-3 bg-surface text-text font-bold rounded-lg text-xs uppercase tracking-wide border border-border hover:bg-bg transition-colors">
+                WhatsApp
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
+
+      {/* NAV BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 h-14 bg-bg border-t border-border flex justify-around items-center text-xxs font-medium">
+        <button className="text-text flex flex-col items-center gap-1">
+          <div className="w-1 h-1 rounded-full bg-primary" />
+          Feed
+        </button>
+        <button className="text-muted hover:text-text transition-colors">Tasks</button>
+        <button className="text-muted hover:text-text transition-colors">Perf</button>
+        <button className="text-muted hover:text-text transition-colors">Settings</button>
+      </nav>
     </div>
   );
 }
-
-// SWIPEABLE WRAPPER FOR PRO CARD
-interface ProCardWithSwipeProps {
-  lead: Lead;
-  onOpen: (lead: Lead) => void;
-  onGhost: (id: string) => void;
-  onCall: (id: string) => void;
-}
-
-const ProCardWithSwipe = ({ lead, onOpen, onGhost, onCall }: ProCardWithSwipeProps) => {
-  const x = useMotionValue(0);
-  const bg = useTransform(x, [-100, 0, 100], ['#EF4444', '#000000', '#10B981']);
-  const actionOpacity = useTransform(x, [-100, -50, 0, 50, 100], [1, 0.5, 0, 0.5, 1]);
-
-  const bind = useDrag(({ movement: [mx], active }) => {
-    x.set(mx);
-    if (!active) {
-      if (mx > 100) {
-        onCall(lead.id);
-        x.set(0);
-      } else if (mx < -100) {
-        onGhost(lead.id);
-        x.set(0);
-      } else {
-        x.set(0);
-      }
-    }
-  }, { axis: 'x', filterTaps: true });
-
-  // Extract gesture handlers, excluding conflicting event handlers
-  const { onDrag, onDragStart, onDragEnd, ...gestureHandlers } = bind() as Record<string, unknown>;
-
-  return (
-    <div className="relative overflow-hidden">
-      {/* Background Actions */}
-      <motion.div
-        style={{ backgroundColor: bg }}
-        className="absolute inset-0 flex justify-between items-center px-6"
-      >
-        <motion.div style={{ opacity: actionOpacity }} className="text-[10px] font-bold uppercase text-black flex items-center gap-1">
-          <Phone size={14} fill="currentColor" /> Call
-        </motion.div>
-        <motion.div style={{ opacity: actionOpacity }} className="text-[10px] font-bold uppercase text-white flex items-center gap-1">
-          Ghost <Ghost size={14} />
-        </motion.div>
-      </motion.div>
-
-      {/* Foreground Card */}
-      <motion.div
-        {...gestureHandlers}
-        style={{ x, touchAction: 'none' }}
-        className="relative z-10"
-      >
-        <ProCard lead={lead} onOpen={onOpen} />
-      </motion.div>
-    </div>
-  );
-};
