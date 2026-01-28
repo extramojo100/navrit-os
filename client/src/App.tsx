@@ -1,187 +1,128 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDrag } from '@use-gesture/react';
+import { useMotionValue, useTransform, motion, AnimatePresence } from 'framer-motion';
 import { ProCard } from './components/ProCard';
-import { WorkflowTracker } from './modules/workflows/WorkflowTracker';
-import { initiateBookingPayment } from './modules/payments/PaymentGateway';
-import { Fingerprint, History, X, Phone, MessageSquare } from 'lucide-react';
-
-interface WorkflowStep {
-  label: string;
-  tat: string;
-  isOverdue?: boolean;
-}
-
-interface Journey {
-  model: string;
-  status: string;
-  price: number;
-  workflow?: {
-    current: number;
-    steps: WorkflowStep[];
-  };
-}
-
-interface Lead {
-  id: string;
-  name: string;
-  phone: string;
-  location?: string;
-  daysLastActive: number;
-  multiplier: number;
-  journeys: Journey[];
-}
+import { DetailSheet } from './components/DetailSheet';
+import { MockEngine } from './services/MockEngine';
+import type { Lead } from './services/MockEngine';
+import { Zap, Loader2, Phone, Ghost, RotateCcw } from 'lucide-react';
 
 export default function App() {
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // MOCK DATA: Simulating the "Title Transfer" Complexity
-  const leads: Lead[] = [
-    {
-      id: '1',
-      name: 'Rahul Sharma',
-      phone: '+91 98765 43210',
-      location: 'West Delhi',
-      daysLastActive: 0,
-      multiplier: 1.5,
-      journeys: [
-        {
-          model: 'Honda City ZX CVT',
-          status: 'Quote Sent',
-          price: 1680000,
-          workflow: {
-            current: 2,
-            steps: [
-              { label: 'Booking', tat: '1d' },
-              { label: 'Finance', tat: '2d' },
-              { label: 'Invoice', tat: '1d' },
-              { label: 'PDI', tat: '1d' },
-              { label: 'Delivery', tat: '1d' }
-            ]
-          }
-        },
-        {
-          model: 'Elevate Apex',
-          status: 'Test Drive',
-          price: 1550000
-        }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Arjun Singh',
-      phone: '+91 99887 76655',
-      location: 'South Mumbai',
-      daysLastActive: 5,
-      multiplier: 1.0, // Stagnant!
-      journeys: [
-        {
-          model: 'Amaze Elite',
-          status: 'LTO Process',
-          price: 950000,
-          workflow: {
-            current: 1,
-            steps: [
-              { label: 'Docs', tat: '1d', isOverdue: true },
-              { label: 'LTO', tat: '3d' },
-              { label: 'HPG', tat: '2d' },
-              { label: 'Reg', tat: '2d' }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      phone: '+91 99012 34567',
-      location: 'Gurgaon',
-      daysLastActive: 1,
-      multiplier: 2.0,
-      journeys: [
-        {
-          model: 'City VX CVT',
-          status: 'Finance Approved',
-          price: 1520000,
-          workflow: {
-            current: 3,
-            steps: [
-              { label: 'Booking', tat: '1d' },
-              { label: 'Finance', tat: '2d' },
-              { label: 'Invoice', tat: '1d' },
-              { label: 'PDI', tat: '1d' },
-              { label: 'Delivery', tat: '1d' }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      id: '4',
-      name: 'Vikram Malhotra',
-      phone: '+91 88776 65544',
-      location: 'Noida',
-      daysLastActive: 0,
-      multiplier: 1.2,
-      journeys: [
-        {
-          model: 'Amaze VX MT',
-          status: 'Booking Done',
-          price: 980000,
-          workflow: {
-            current: 1,
-            steps: [
-              { label: 'Booking', tat: '1d' },
-              { label: 'Insurance', tat: '1d' },
-              { label: 'LTO', tat: '3d' },
-              { label: 'Delivery', tat: '1d' }
-            ]
-          }
-        },
-        {
-          model: 'City V MT',
-          status: 'Quote Requested',
-          price: 1280000
-        }
-      ]
+  // INITIALIZE (The "Boot" Sequence)
+  useEffect(() => {
+    loadLeads();
+  }, []);
+
+  const loadLeads = async () => {
+    setLoading(true);
+    const data = await MockEngine.getLeads();
+    // Sort by Commission (The "Elon" Logic)
+    const sorted = [...data].sort((a, b) => b.commission.amount - a.commission.amount);
+    setLeads(sorted);
+    setLoading(false);
+  };
+
+  const handleReset = async () => {
+    await MockEngine.resetData();
+    await loadLeads();
+  };
+
+  // ACTIONS
+  const handleGhost = async (id: string) => {
+    // Optimistic UI Update
+    setLeads(prev => prev.filter(l => l.id !== id));
+    await MockEngine.nukeLead(id);
+  };
+
+  const handleCall = (id: string) => {
+    const lead = leads.find(l => l.id === id);
+    if (lead) {
+      console.log(`📞 Calling: ${lead.name} at ${lead.phone}`);
+      // In production: window.location.href = `tel:${lead.phone}`;
     }
-  ];
+  };
 
   // Calculate totals
-  const totalSales = leads.reduce((acc, lead) => acc + lead.journeys[0].price, 0);
-  const activeLeads = leads.filter(l => l.daysLastActive <= 2).length;
-
-  const handlePayment = async () => {
-    await initiateBookingPayment(5000);
-  };
+  const totalCommission = leads.reduce((acc, lead) => acc + lead.commission.amount, 0);
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 pb-20">
 
-      {/* HEADER: METRICS (Not Targets) */}
+      {/* HEADER */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur border-b border-white/5 px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl flex items-center justify-center border border-white/10">
-            <Fingerprint size={18} className="text-zinc-400" />
+          <div className="w-9 h-9 bg-gradient-to-br from-[#FF6B35] to-red-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,107,53,0.3)]">
+            <Zap size={18} className="text-black fill-current" />
           </div>
           <div>
-            <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Pipeline Value</div>
-            <div className="text-lg font-bold text-white">₹ {(totalSales / 10000000).toFixed(2)} Cr</div>
+            <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">My Commission</div>
+            <div className="text-base font-black text-white leading-none">₹ {totalCommission.toLocaleString()}</div>
           </div>
         </div>
-        <button className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center border border-white/10 hover:bg-zinc-800 transition-colors">
-          <History size={16} className="text-zinc-500" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            className="p-2 bg-zinc-900 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors"
+            title="Reset Demo Data"
+          >
+            <RotateCcw size={14} />
+          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-mono text-zinc-400">LIVE</span>
+          </div>
+        </div>
       </header>
 
-      {/* FEED: UNIFORM PRO CARDS */}
-      <main>
-        <div className="px-4 py-3 bg-[#0A0A0A] flex justify-between items-center border-b border-white/5">
-          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Action Queue</span>
-          <span className="text-[10px] text-emerald-400 font-bold">{activeLeads} Active</span>
-        </div>
+      {/* FEED */}
+      <main className="pt-2">
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+            <Loader2 className="animate-spin mb-2" size={24} />
+            <span className="text-xs uppercase tracking-widest">Syncing Digital Twin...</span>
+          </div>
+        )}
 
-        {leads.map(lead => (
-          <ProCard key={lead.id} lead={lead} onOpen={setSelectedLead} />
-        ))}
+        {/* DATA STATE */}
+        {!loading && (
+          <>
+            <div className="px-4 py-2 flex justify-between items-center bg-[#09090B] border-b border-white/5">
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                Action Queue
+              </span>
+              <span className="text-[10px] text-emerald-400 font-bold font-mono">
+                {leads.length} LIVE
+              </span>
+            </div>
+
+            {leads.map(lead => (
+              <ProCardWithSwipe
+                key={lead.id}
+                lead={lead}
+                onOpen={setSelectedLead}
+                onGhost={handleGhost}
+                onCall={handleCall}
+              />
+            ))}
+
+            {leads.length === 0 && (
+              <div className="p-8 text-center">
+                <div className="text-zinc-600 text-sm">All leads processed.</div>
+                <button
+                  onClick={handleReset}
+                  className="mt-4 px-4 py-2 bg-zinc-900 rounded-lg text-xs text-zinc-400 hover:text-white transition-colors"
+                >
+                  Reset Demo Data
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </main>
 
       {/* BOTTOM DOCK */}
@@ -195,78 +136,70 @@ export default function App() {
         <button className="text-zinc-600 hover:text-zinc-400 transition-colors">SETTINGS</button>
       </nav>
 
-      {/* DETAIL OVERLAY (With Workflow Engine) */}
-      {selectedLead && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-          <div className="absolute inset-x-0 bottom-0 top-12 bg-[#09090B] rounded-t-3xl overflow-hidden flex flex-col border-t border-white/10">
-            {/* Header */}
-            <div className="p-4 flex justify-between items-start border-b border-white/5">
-              <div>
-                <h2 className="text-xl font-bold text-white">{selectedLead.name}</h2>
-                <div className="text-xs text-zinc-500 font-mono mt-1">{selectedLead.phone}</div>
-              </div>
-              <button
-                onClick={() => setSelectedLead(null)}
-                className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors"
-              >
-                <X size={16} className="text-zinc-400" />
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Current Deal */}
-              <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-white">{selectedLead.journeys[0].model}</span>
-                  <span className="text-sm font-mono text-emerald-400">₹{(selectedLead.journeys[0].price / 100000).toFixed(2)}L</span>
-                </div>
-                <div className="text-xs text-zinc-500">{selectedLead.journeys[0].status}</div>
-              </div>
-
-              {/* The "Deep Process" Engine */}
-              {selectedLead.journeys[0].workflow && (
-                <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                  <WorkflowTracker
-                    steps={selectedLead.journeys[0].workflow.steps}
-                    currentStepIndex={selectedLead.journeys[0].workflow.current}
-                  />
-                </div>
-              )}
-
-              {/* Location & Details */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-                  <div className="text-[9px] text-zinc-600 uppercase tracking-widest">Location</div>
-                  <div className="text-xs text-white font-medium mt-1">{selectedLead.location}</div>
-                </div>
-                <div className="bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-                  <div className="text-[9px] text-zinc-600 uppercase tracking-widest">Bonus Multiplier</div>
-                  <div className="text-xs text-emerald-400 font-bold mt-1">{selectedLead.multiplier}x</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Dock */}
-            <div className="p-4 bg-[#0A0A0A] border-t border-white/10 space-y-3">
-              <button
-                onClick={handlePayment}
-                className="w-full py-4 bg-white text-black font-bold rounded-xl uppercase tracking-widest text-xs hover:bg-zinc-200 transition-colors"
-              >
-                Initiate Booking (₹5,000)
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="py-3 bg-[#FF6B35] text-black font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase">
-                  <Phone size={16} /> Call
-                </button>
-                <button className="py-3 bg-zinc-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase border border-white/5">
-                  <MessageSquare size={16} /> WhatsApp
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* DETAIL OVERLAY */}
+      <AnimatePresence>
+        {selectedLead && (
+          <DetailSheet lead={selectedLead} onClose={() => setSelectedLead(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+// SWIPEABLE WRAPPER FOR PRO CARD
+interface ProCardWithSwipeProps {
+  lead: Lead;
+  onOpen: (lead: Lead) => void;
+  onGhost: (id: string) => void;
+  onCall: (id: string) => void;
+}
+
+const ProCardWithSwipe = ({ lead, onOpen, onGhost, onCall }: ProCardWithSwipeProps) => {
+  const x = useMotionValue(0);
+  const bg = useTransform(x, [-100, 0, 100], ['#EF4444', '#000000', '#10B981']);
+  const actionOpacity = useTransform(x, [-100, -50, 0, 50, 100], [1, 0.5, 0, 0.5, 1]);
+
+  const bind = useDrag(({ movement: [mx], active }) => {
+    x.set(mx);
+    if (!active) {
+      if (mx > 100) {
+        onCall(lead.id);
+        x.set(0);
+      } else if (mx < -100) {
+        onGhost(lead.id);
+        x.set(0);
+      } else {
+        x.set(0);
+      }
+    }
+  }, { axis: 'x', filterTaps: true });
+
+  // Extract gesture handlers, excluding conflicting event handlers
+  const { onDrag, onDragStart, onDragEnd, ...gestureHandlers } = bind() as Record<string, unknown>;
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Background Actions */}
+      <motion.div
+        style={{ backgroundColor: bg }}
+        className="absolute inset-0 flex justify-between items-center px-6"
+      >
+        <motion.div style={{ opacity: actionOpacity }} className="text-[10px] font-bold uppercase text-black flex items-center gap-1">
+          <Phone size={14} fill="currentColor" /> Call
+        </motion.div>
+        <motion.div style={{ opacity: actionOpacity }} className="text-[10px] font-bold uppercase text-white flex items-center gap-1">
+          Ghost <Ghost size={14} />
+        </motion.div>
+      </motion.div>
+
+      {/* Foreground Card */}
+      <motion.div
+        {...gestureHandlers}
+        style={{ x, touchAction: 'none' }}
+        className="relative z-10"
+      >
+        <ProCard lead={lead} onOpen={onOpen} />
+      </motion.div>
+    </div>
+  );
+};
