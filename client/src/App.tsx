@@ -5,7 +5,7 @@ import { ProRow } from './components/ProRow';
 import { VerticalReceipt } from './components/VerticalReceipt';
 import { ActionDock } from './components/ActionDock';
 import { SocialBooster } from './components/SocialBooster';
-import { Fingerprint, X, LogOut, Loader2 } from 'lucide-react';
+import { Fingerprint, LogOut, Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface Discount {
@@ -36,8 +36,6 @@ export default function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selected, setSelected] = useState<Lead | null>(null);
 
-  // MOCK DATA (Until you paste keys)
-  // This mirrors the Supabase Schema exactly
   useEffect(() => {
     setLeads([
       {
@@ -57,18 +55,22 @@ export default function App() {
     ]);
   }, []);
 
+  // 1. Loading State (Prevent FOUC)
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#FF6B35]" size={32} />
+        <Loader2 className="animate-spin text-[#FF6B35]" size={24} />
       </div>
     );
   }
 
+  // 2. Strict Gating (Redirection / Rendering)
+  // If no session exists, render Login component exclusively.
   if (!session) {
     return <Login />;
   }
 
+  // 3. Authenticated Dashboard
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FF6B35]/30 pb-24">
 
@@ -80,8 +82,8 @@ export default function App() {
           </div>
           <span className="text-xs font-bold text-zinc-300 tracking-widest">NAVRIT 11.0</span>
         </div>
-        <button onClick={signOut} className="p-2 hover:bg-white/5 rounded-full transition-colors" title="Sign Out">
-          <LogOut size={16} className="text-zinc-500 hover:text-white" />
+        <button onClick={signOut} className="p-2 hover:bg-white/5 rounded-full transition-colors group" title="Sign Out">
+          <LogOut size={16} className="text-zinc-500 group-hover:text-red-400 transition-colors" />
         </button>
       </header>
 
