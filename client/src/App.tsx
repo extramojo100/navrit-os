@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 // import { supabase } from './lib/supabaseClient'; // Uncomment when keys are ready
 import { ProRow } from './components/ProRow';
 import { VerticalReceipt } from './components/VerticalReceipt';
