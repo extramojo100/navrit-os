@@ -1,72 +1,40 @@
-import { Instagram, Linkedin, Download, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Instagram, Share2 } from 'lucide-react';
 
 interface SocialBoosterProps {
     model: string;
-    customerName?: string;
 }
 
-export const SocialBooster = ({ model, customerName }: SocialBoosterProps) => {
-    const handleShare = (platform: 'instagram' | 'linkedin' | 'download') => {
-        console.log(`📤 Sharing to ${platform}:`, { model, customerName });
-        // In production: Open native share or platform-specific flow
-    };
-
+export const SocialBooster: React.FC<SocialBoosterProps> = ({ model }) => {
     return (
-        <div className="bg-surface border border-border rounded-lg p-4">
-            <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-primary" />
-                    <h4 className="text-xs font-bold text-text uppercase tracking-widest">Victory Lap</h4>
-                </div>
-                <span className="text-xxs text-muted">AI Generated</span>
+        <div className="mt-6 border border-white/10 rounded-xl overflow-hidden bg-[#121212]">
+            <div className="bg-[#1A1A1A] p-3 flex justify-between items-center border-b border-white/10">
+                <span className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-widest">Deal Closed • Share Now</span>
             </div>
 
-            {/* ASSET PREVIEW */}
-            <div className="aspect-video bg-bg rounded border border-border mb-3 flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+            {/* THE ASSET */}
+            <div className="aspect-video bg-zinc-900 relative flex items-center justify-center overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
 
-                {/* Content Preview */}
-                <div className="absolute bottom-3 left-3 right-3 z-20">
-                    <p className="text-sm font-bold text-white leading-tight">
-                        Just delivered another {model}! 🚗💨
-                    </p>
-                    <p className="text-xs text-zinc-300 mt-1">
-                        {customerName ? `Congrats ${customerName}! ` : ''}
-                        Another happy customer driving home in style.
-                    </p>
-                    <p className="text-xxs text-zinc-400 mt-2">
-                        #Honda #NewCar #SalesWin #Delivery
-                    </p>
+                {/* THE WATERMARK */}
+                <div className="absolute bottom-2 right-3 z-20 flex flex-col items-end">
+                    <span className="text-[8px] text-white/60 font-mono">POWERED BY</span>
+                    <span className="text-[10px] text-white font-bold tracking-wider">NAVRIT OS</span>
                 </div>
 
-                {/* Placeholder Image */}
-                <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="text-4xl mb-2">🚗</div>
-                        <div className="text-xxs text-zinc-600 font-mono">[HERO_IMAGE]</div>
-                    </div>
+                {/* MOCK IMAGE */}
+                <div className="text-center z-0">
+                    <div className="text-4xl">🚗 💨</div>
+                    <div className="text-[10px] text-zinc-500 mt-2">Generating Delivery Asset for {model}...</div>
                 </div>
             </div>
 
-            {/* ACTION GRID */}
-            <div className="grid grid-cols-3 gap-2">
-                <button
-                    onClick={() => handleShare('instagram')}
-                    className="flex items-center justify-center gap-2 bg-bg border border-border py-2.5 rounded hover:bg-zinc-900 hover:border-primary/30 transition-colors text-xs text-muted font-medium group"
-                >
-                    <Instagram size={14} className="group-hover:text-pink-400 transition-colors" /> Story
+            <div className="grid grid-cols-2 divide-x divide-white/10">
+                <button className="p-3 hover:bg-white/5 text-xs font-bold text-white flex items-center justify-center gap-2">
+                    <Instagram size={14} /> Story
                 </button>
-                <button
-                    onClick={() => handleShare('linkedin')}
-                    className="flex items-center justify-center gap-2 bg-bg border border-border py-2.5 rounded hover:bg-zinc-900 hover:border-primary/30 transition-colors text-xs text-muted font-medium group"
-                >
-                    <Linkedin size={14} className="group-hover:text-blue-400 transition-colors" /> Post
-                </button>
-                <button
-                    onClick={() => handleShare('download')}
-                    className="flex items-center justify-center gap-2 bg-bg border border-border py-2.5 rounded hover:bg-zinc-900 hover:border-primary/30 transition-colors text-xs text-muted font-medium group"
-                >
-                    <Download size={14} className="group-hover:text-success transition-colors" /> Save
+                <button className="p-3 hover:bg-white/5 text-xs font-bold text-white flex items-center justify-center gap-2">
+                    <Share2 size={14} /> Status
                 </button>
             </div>
         </div>
