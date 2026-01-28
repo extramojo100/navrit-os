@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './auth/useAuth';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import { ProRow } from './components/ProRow';
 import { VerticalReceipt } from './components/VerticalReceipt';
 import { ActionDock } from './components/ActionDock';
@@ -55,6 +56,14 @@ export default function App() {
     ]);
   }, []);
 
+  // 3. Auth Redirect Logic
+  // If authenticated but on auth pages, clean the URL.
+  useEffect(() => {
+    if (session && (window.location.pathname === '/login' || window.location.pathname === '/signup')) {
+      window.history.replaceState(null, '', '/');
+    }
+  }, [session]);
+
   // 1. Loading State (Prevent FOUC)
   if (loading) {
     return (
@@ -65,8 +74,13 @@ export default function App() {
   }
 
   // 2. Strict Gating (Redirection / Rendering)
-  // If no session exists, render Login component exclusively.
+  // If no session exists, render Login or Signup based on URL path.
+  // This mimics routing without adding complex dependencies.
   if (!session) {
+    const path = window.location.pathname;
+    if (path === '/signup') {
+      return <Signup />;
+    }
     return <Login />;
   }
 

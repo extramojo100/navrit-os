@@ -132,7 +132,8 @@ export default function Login() {
                             </div>
 
                             <button
-                                onClick={handleSignUp}
+                                type="button"
+                                onClick={() => window.location.href = '/signup'}
                                 disabled={loading}
                                 className="w-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs uppercase tracking-wider border border-white/5"
                             >
