@@ -1,39 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
-html {
-    background: #000000;
+:root {
+    --neon-cyan: #00f3ff;
+    --neon-purple: #bc13fe;
+    --bg-deep: #030508;
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #000000;
-    color: #ffffff;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overscroll-behavior: none;
+    background-color: var(--bg-deep);
+    color: #e0f2fe;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    /* App feel */
 }
 
-/* Hide scrollbars for mobile feel */
-::-webkit-scrollbar {
-    display: none;
+/* THE GRID */
+.cyber-grid {
+    background-image:
+        linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
 }
 
-* {
-    scrollbar-width: none;
+.font-orbitron {
+    font-family: 'Orbitron', sans-serif;
 }
 
-/* Selection color */
-::selection {
-    background: rgba(255, 107, 53, 0.3);
+/* NEON GLOWS */
+.glow-text {
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.glow-border {
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.1), inset 0 0 10px rgba(0, 243, 255, 0.05);
+    border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+/* GLASS */
+.glass-panel {
+    background: rgba(10, 15, 20, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }

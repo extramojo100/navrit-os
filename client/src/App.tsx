@@ -1,57 +1,48 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
-import { LeadDetail } from './components/LeadDetail';
+import { SystemBoot } from './components/SystemBoot';
+import { BattleLens } from './components/BattleLens';
 import { ProRow } from './components/ProRow';
-import { WalletView } from './components/WalletView';
-import { AIStudio } from './components/AIStudio';
-import { BiometricGate } from './components/BiometricGate';
-
-// MOCK DATA
-const MOCK_LEADS = [
-  {
-    id: '1', name: 'Rahul Sharma', temperature: 'HOT', status: 'NEGOTIATION', commission_est: 14500,
-    journeys: [{ model: 'Honda City ZX', netPrice: 1689000, exShowroom: 1680000 }]
-  }
-];
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [booted, setBooted] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [showBattle, setShowBattle] = useState(false);
 
-  // 1. THE GATE
-  if (!isAuthenticated) {
-    return <BiometricGate onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
+  // 1. SHOW BOOT SEQUENCE FIRST
+  if (!booted) return <SystemBoot onComplete={() => setBooted(true)} />;
 
-  // 2. THE DETAIL VIEW (Overlay)
-  if (selectedLead) {
-    return <LeadDetail lead={selectedLead} onBack={() => setSelectedLead(null)} />;
-  }
+  // 2. SHOW BATTLE MODE (Overlay)
+  if (showBattle) return <BattleLens onClose={() => setShowBattle(false)} />;
 
-  // 3. THE OS ROUTER
+  // 3. SHOW MAIN OS
   return (
-    <Layout activeTab={activeTab} setTab={setActiveTab}>
-      {activeTab === 'home' && <Dashboard onNav={setActiveTab} />}
+    <>
+      <div className="cyber-grid" /> {/* The 2050 Background */}
+      <Layout activeTab={activeTab} setTab={setActiveTab}>
+        {activeTab === 'home' && <Dashboard onNav={(t: string) => t === 'battle' ? setShowBattle(true) : setActiveTab(t)} />}
 
-      {activeTab === 'leads' && (
-        <div className="p-4 md:p-10 pb-24">
-          <h1 className="text-2xl font-bold text-white mb-6">Pipeline</h1>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-2">
-            {['All', 'New', 'Test Drive', 'Negotiation'].map(s => (
-              <button key={s} className="px-4 py-1.5 rounded-full border border-zinc-700 text-xs font-bold text-zinc-400 hover:bg-zinc-800 hover:text-white whitespace-nowrap transition-colors">{s}</button>
+        {activeTab === 'leads' && (
+          <div className="p-6 pb-24 space-y-4">
+            <div className="flex justify-between items-end mb-6">
+              <h1 className="text-3xl font-orbitron font-bold text-white glow-text">LIVE FEED</h1>
+              <div className="text-cyan-500 font-mono text-xs animate-pulse">● REALTIME</div>
+            </div>
+
+            {/* Mock Data */}
+            {[1, 2, 3].map(i => (
+              <ProRow key={i} lead={{
+                name: 'Rahul Sharma',
+                temperature: 'HOT',
+                status: 'NEGOTIATION',
+                commission_est: 14500,
+                journeys: [{ model: 'City ZX', stage: 'Negotiation', net_price: 1689000, ex_showroom: 1680000, insurance: 0, accessories: 0, discounts: [] }]
+              }} />
             ))}
           </div>
-          <div className="space-y-1">
-            {MOCK_LEADS.map(l => <ProRow key={l.id} lead={l} onClick={() => setSelectedLead(l)} />)}
-          </div>
-        </div>
-      )}
-
-      {/* NEW ROUTES */}
-      {activeTab === 'tools' && <AIStudio />}
-      {activeTab === 'wallet' && <WalletView />}
-    </Layout>
+        )}
+      </Layout>
+    </>
   );
 }
