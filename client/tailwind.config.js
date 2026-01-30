@@ -14,8 +14,10 @@ export default {
         danger: '#E54D2E',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Rajdhani', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        orbitron: ['Orbitron', 'sans-serif'],
+        rajdhani: ['Rajdhani', 'sans-serif'],
       },
       fontSize: {
         'xxs': '10px',
