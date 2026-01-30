@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { DateStrip } from './DateStrip';
 import { TaskCard } from './TaskCard';
 import { TargetRing } from './TargetRing';

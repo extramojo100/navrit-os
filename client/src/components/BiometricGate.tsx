@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Fingerprint, ScanFace, CheckCircle2 } from 'lucide-react';
 
 export const BiometricGate = ({ onAuthenticated }: any) => {

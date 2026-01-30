@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Home, Users, Settings, Wallet, Wand2 } from 'lucide-react';
 
 export const Layout = ({ children, activeTab, setTab }: any) => {

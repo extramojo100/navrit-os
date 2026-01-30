@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { CreditCard, Zap, Plus } from 'lucide-react';
 
 export const WalletView = () => {

@@ -38,7 +38,7 @@ export default function Login() {
         }
     };
 
-    const handleSignUp = async () => {
+    const _handleSignUp = async () => {
         if (!handleValidation()) return;
 
         setLoading(true);

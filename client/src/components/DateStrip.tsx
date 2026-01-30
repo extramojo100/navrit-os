@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const DATES = [
     { day: 'Mon', date: 17, active: false },

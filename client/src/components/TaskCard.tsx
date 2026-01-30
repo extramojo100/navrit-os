@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Phone, Car, FileSignature, ChevronRight } from 'lucide-react';
 
 const ICONS: any = {

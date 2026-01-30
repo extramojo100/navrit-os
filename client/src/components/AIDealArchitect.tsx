@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sparkles, Send, CheckCircle2 } from 'lucide-react';
 
 const SCENARIOS = [

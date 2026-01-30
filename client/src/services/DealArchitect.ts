@@ -1,4 +1,4 @@
-import { checkDuplicate, validateProforma } from './HondaRules';
+import { checkDuplicate } from './HondaRules';
 import { checkTatBreach } from './TitleTransferEngine';
 import { calculateIncentive } from './UCRFCalculator';
 

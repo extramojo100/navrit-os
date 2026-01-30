@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Video, FileText, Wand2, Play, Share2 } from 'lucide-react';
 
 export const AIStudio = () => {

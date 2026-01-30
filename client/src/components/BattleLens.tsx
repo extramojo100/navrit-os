@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { X, Search, Zap } from 'lucide-react';
 
 export const BattleLens = ({ onClose }: any) => {
