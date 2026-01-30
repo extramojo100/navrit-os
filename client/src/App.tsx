@@ -1,162 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from './auth/useAuth';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import React, { useState } from 'react';
+import { Layout } from './components/Layout';
+import { Dashboard } from './components/Dashboard';
+import { LeadDetail } from './components/LeadDetail';
 import { ProRow } from './components/ProRow';
-import { VerticalReceipt } from './components/VerticalReceipt';
-import { ActionDock } from './components/ActionDock';
-import { SocialBooster } from './components/SocialBooster';
-import { Fingerprint, LogOut, Loader2, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { WalletView } from './components/WalletView';
+import { AIStudio } from './components/AIStudio';
+import { BiometricGate } from './components/BiometricGate';
 
-interface Discount {
-  label: string;
-  amount: number;
-}
-
-interface Journey {
-  model: string;
-  ex_showroom: number;
-  insurance: number;
-  accessories: number;
-  net_price: number;
-  discounts: Discount[];
-}
-
-interface Lead {
-  id: string;
-  name: string;
-  status: string;
-  temperature: string;
-  commission_est: number;
-  journeys: Journey[];
-}
+// MOCK DATA
+const MOCK_LEADS = [
+  {
+    id: '1', name: 'Rahul Sharma', temperature: 'HOT', status: 'NEGOTIATION', commission_est: 14500,
+    journeys: [{ model: 'Honda City ZX', netPrice: 1689000, exShowroom: 1680000 }]
+  }
+];
 
 export default function App() {
-  const { session, loading, signOut } = useAuth();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [selected, setSelected] = useState<Lead | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedLead, setSelectedLead] = useState<any>(null);
 
-  useEffect(() => {
-    setLeads([
-      {
-        id: '1', name: 'Rahul Sharma', status: 'NEGOTIATION', temperature: 'HOT', commission_est: 14500,
-        journeys: [{
-          model: 'Honda City ZX', ex_showroom: 1680000, insurance: 42000, accessories: 12000, net_price: 1689000,
-          discounts: [{ label: 'Corp', amount: 5000 }, { label: 'Exchange', amount: 40000 }]
-        }]
-      },
-      {
-        id: '2', name: 'Arjun Singh', status: 'DELIVERED', temperature: 'WARM', commission_est: 4000,
-        journeys: [{
-          model: 'Amaze Elite', ex_showroom: 950000, insurance: 0, accessories: 0, net_price: 950000,
-          discounts: []
-        }]
-      }
-    ]);
-  }, []);
-
-  // 3. Auth Redirect Logic
-  // If authenticated but on /login, clean URL. 
-  // We ALLOW /signup even if authenticated (or should we redirect? Standard is redirect).
-  // But for now, let's strictly fix the "can't see signup" issue.
-  useEffect(() => {
-    if (session && window.location.pathname === '/login') {
-      window.history.replaceState(null, '', '/');
-    }
-  }, [session]);
-
-  // 1. Loading State (Prevent FOUC)
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#FF6B35]" size={24} />
-      </div>
-    );
+  // 1. THE GATE
+  if (!isAuthenticated) {
+    return <BiometricGate onAuthenticated={() => setIsAuthenticated(true)} />;
   }
 
-  // 2. Strict Gating (Redirection / Rendering)
-  // If no session exists, render Login or Signup based on URL path.
-  // This mimics routing without adding complex dependencies.
-  if (!session) {
-    const path = window.location.pathname;
-    if (path === '/signup') {
-      return <Signup />;
-    }
-    return <Login />;
+  // 2. THE DETAIL VIEW (Overlay)
+  if (selectedLead) {
+    return <LeadDetail lead={selectedLead} onBack={() => setSelectedLead(null)} />;
   }
 
-  // 3. Authenticated Dashboard (or specific routes)
-  if (window.location.pathname === '/signup') {
-    return <Signup />;
-  }
-
+  // 3. THE OS ROUTER
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FF6B35]/30 pb-24">
+    <Layout activeTab={activeTab} setTab={setActiveTab}>
+      {activeTab === 'home' && <Dashboard onNav={setActiveTab} />}
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur border-b border-white/5 px-4 h-14 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
-            <Fingerprint size={16} className="text-zinc-400" />
+      {activeTab === 'leads' && (
+        <div className="p-4 md:p-10 pb-24">
+          <h1 className="text-2xl font-bold text-white mb-6">Pipeline</h1>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-2">
+            {['All', 'New', 'Test Drive', 'Negotiation'].map(s => (
+              <button key={s} className="px-4 py-1.5 rounded-full border border-zinc-700 text-xs font-bold text-zinc-400 hover:bg-zinc-800 hover:text-white whitespace-nowrap transition-colors">{s}</button>
+            ))}
           </div>
-          <span className="text-xs font-bold text-zinc-300 tracking-widest">NAVRIT 11.0</span>
+          <div className="space-y-1">
+            {MOCK_LEADS.map(l => <ProRow key={l.id} lead={l} onClick={() => setSelectedLead(l)} />)}
+          </div>
         </div>
-        <button onClick={signOut} className="p-2 hover:bg-white/5 rounded-full transition-colors group" title="Sign Out">
-          <LogOut size={16} className="text-zinc-500 group-hover:text-red-400 transition-colors" />
-        </button>
-      </header>
+      )}
 
-      {/* FEED */}
-      <main>
-        <div className="px-4 py-2 bg-[#09090B] border-b border-white/5 flex justify-between items-center">
-          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Active Queue</span>
-          <span className="text-[10px] text-emerald-500 font-bold">{leads.length} Live</span>
-        </div>
-        {leads.map(l => (
-          <ProRow key={l.id} lead={l} onClick={() => setSelected(l)} />
-        ))}
-      </main>
-
-      {/* DETAIL OVERLAY */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25 }}
-            className="fixed inset-0 z-50 bg-[#000000] flex flex-col"
-          >
-            {/* SHEET HEADER */}
-            <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-[#09090B]">
-              <div>
-                <h2 className="text-sm font-bold text-white">{selected.name}</h2>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">ID: {selected.id}</p>
-              </div>
-              <button onClick={() => setSelected(null)} className="p-2 bg-white/5 rounded-full text-zinc-400">
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* BODY */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-32">
-
-              {/* 1. FINANCIALS */}
-              <section>
-                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Deal Structure</div>
-                <VerticalReceipt journey={selected.journeys[0]} />
-              </section>
-
-              {/* 2. SOCIAL BOOSTER (Conditional) */}
-              {selected.status === 'DELIVERED' && (
-                <SocialBooster model={selected.journeys[0].model} />
-              )}
-
-            </div>
-
-            {/* 3. STICKY DOCK */}
-            <ActionDock />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {/* NEW ROUTES */}
+      {activeTab === 'tools' && <AIStudio />}
+      {activeTab === 'wallet' && <WalletView />}
+    </Layout>
   );
 }
