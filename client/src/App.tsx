@@ -1,48 +1,59 @@
-import React, { useState } from 'react';
-import { Layout } from './components/Layout';
+import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
-import { SystemBoot } from './components/SystemBoot';
+import { BiometricGate } from './components/BiometricGate';
 import { BattleLens } from './components/BattleLens';
-import { ProRow } from './components/ProRow';
+import { checkDevice, registerDevice } from './services/AuthService';
+import { Home, List, Zap, FileText, LayoutGrid } from 'lucide-react';
 
 export default function App() {
-  const [booted, setBooted] = useState(false);
+  const [auth, setAuth] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [showBattle, setShowBattle] = useState(false);
 
-  // 1. SHOW BOOT SEQUENCE FIRST
-  if (!booted) return <SystemBoot onComplete={() => setBooted(true)} />;
+  // PWA AUTH CHECK
+  useEffect(() => {
+    // If device is known, we skip OTP and go straight to Biometric
+    const isKnown = checkDevice();
+    if (!isKnown) registerDevice(); // Simulate first-time registration
+  }, []);
 
-  // 2. SHOW BATTLE MODE (Overlay)
+  if (!auth) return <BiometricGate onAuthenticated={() => setAuth(true)} />;
   if (showBattle) return <BattleLens onClose={() => setShowBattle(false)} />;
 
-  // 3. SHOW MAIN OS
   return (
-    <>
-      <div className="cyber-grid" /> {/* The 2050 Background */}
-      <Layout activeTab={activeTab} setTab={setActiveTab}>
-        {activeTab === 'home' && <Dashboard onNav={(t: string) => t === 'battle' ? setShowBattle(true) : setActiveTab(t)} />}
+    <div className="cyber-grid min-h-screen text-white font-rajdhani">
 
-        {activeTab === 'leads' && (
-          <div className="p-6 pb-24 space-y-4">
-            <div className="flex justify-between items-end mb-6">
-              <h1 className="text-3xl font-orbitron font-bold text-white glow-text">LIVE FEED</h1>
-              <div className="text-cyan-500 font-mono text-xs animate-pulse">● REALTIME</div>
-            </div>
+      {/* DYNAMIC CONTENT */}
+      <main className="pb-24">
+        {activeTab === 'home' && <Dashboard onNav={setActiveTab} />}
+        {activeTab === 'battle' && <div className="p-10 text-center">Compare Tools Loading...</div>}
+      </main>
 
-            {/* Mock Data */}
-            {[1, 2, 3].map(i => (
-              <ProRow key={i} lead={{
-                name: 'Rahul Sharma',
-                temperature: 'HOT',
-                status: 'NEGOTIATION',
-                commission_est: 14500,
-                journeys: [{ model: 'City ZX', stage: 'Negotiation', net_price: 1689000, ex_showroom: 1680000, insurance: 0, accessories: 0, discounts: [] }]
-              }} />
-            ))}
-          </div>
-        )}
-      </Layout>
-    </>
+      {/* BOTTOM NAV (From Wireframe: Home | Activities | Compare | Broadcast) */}
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-[#020617]/90 backdrop-blur-xl border-t border-white/10 flex justify-around items-center z-40 pb-2">
+        <NavBtn icon={Home} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+        <NavBtn icon={List} label="Activity" active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} />
+
+        {/* CENTER BATTLE BUTTON */}
+        <div className="relative -top-6">
+          <button
+            onClick={() => setShowBattle(true)}
+            className="w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(6,182,212,0.5)] border-4 border-[#020617]"
+          >
+            <Zap size={28} fill="currentColor" />
+          </button>
+        </div>
+
+        <NavBtn icon={FileText} label="Brochure" active={activeTab === 'brochure'} onClick={() => setActiveTab('brochure')} />
+        <NavBtn icon={LayoutGrid} label="More" active={activeTab === 'more'} onClick={() => setActiveTab('more')} />
+      </nav>
+    </div>
   );
 }
+
+const NavBtn = ({ icon: Icon, label, active, onClick }: any) => (
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 w-16 ${active ? 'text-cyan-400' : 'text-zinc-600'}`}>
+    <Icon size={20} />
+    <span className="text-[10px] font-bold tracking-wide">{label}</span>
+  </button>
+);
