@@ -14,10 +14,8 @@ export default {
         danger: '#E54D2E',
       },
       fontFamily: {
-        sans: ['Rajdhani', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-        orbitron: ['Orbitron', 'sans-serif'],
-        rajdhani: ['Rajdhani', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['SF Mono', 'monospace'],
       },
       fontSize: {
         'xxs': '10px',
