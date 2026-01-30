@@ -7,25 +7,74 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model Lead {
-  id          String   @id @default(uuid())
-  phone       String   @unique
-  name        String?
-  status      String   @default("NEW")
-  market      String   @default("INDIA")
-  budget      Float?
-  confidence  Float    @default(0.0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  corrections CorrectionLog[]
+model Node {
+  id        String  @id @default(uuid())
+  type      String
+  name      String
+  parentId  String?
+  rules     Rule[]
 }
 
-model CorrectionLog {
-  id          String   @id @default(uuid())
-  leadId      String
-  lead        Lead     @relation(fields: [leadId], references: [id])
-  field       String
-  aiValue     String
-  humanValue  String
-  createdAt   DateTime @default(now())
+model Rule {
+  id        String @id @default(uuid())
+  nodeId    String
+  node      Node   @relation(fields: [nodeId], references: [id])
+  category  String
+  key       String
+  value     String
+  priority  Int
+}
+
+model Lead {
+  id             String    @id @default(uuid())
+  name           String
+  phone          String
+  status         String
+  temperature    String
+  commissionEst  Float
+  journeys       Journey[]
+  createdAt      DateTime  @default(now())
+}
+
+model Journey {
+  id             String   @id @default(uuid())
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id])
+  type           String   // NEW_SALE, TITLE_TRANSFER, UCRF
+  model          String
+  stage          String
+  
+  // Financials
+  exShowroom     Float
+  discounts      Json
+  insurance      Float
+  accessories    Float
+  netPrice       Float
+  
+  // Relations
+  titleTransfer  TitleTransfer?
+  refinance      Refinance?
+  
+  stockStatus    String
+  workflowStep   Int
+}
+
+model TitleTransfer {
+  id          String  @id @default(uuid())
+  journeyId   String  @unique
+  journey     Journey @relation(fields: [journeyId], references: [id])
+  currentStep Int
+  isBreached  Boolean @default(false)
+  agentId     String?
+}
+
+model Refinance {
+  id            String  @id @default(uuid())
+  journeyId     String  @unique
+  journey       Journey @relation(fields: [journeyId], references: [id])
+  loanAmount    Float
+  financier     String
+  baseIncentive Float
+  topUp         Float
+  taxDeduction  Float
 }
