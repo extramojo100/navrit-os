@@ -1,4 +1,3 @@
-import React from 'react';
 import { Instagram, Share2 } from 'lucide-react';
 
 interface SocialBoosterProps {
